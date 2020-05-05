@@ -51,7 +51,7 @@ namespace Moodful.Functions
         [FunctionName(nameof(RenderOpenApiDocument))]
         [OpenApiIgnore]
         public static async Task<IActionResult> RenderOpenApiDocument(
-            [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Get), Route = "openapi/{extension?}")] HttpRequest request,
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = "openapi/{extension?}")] HttpRequest request,
             ILogger log,
             string extension)
         {
