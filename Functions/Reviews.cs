@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -26,8 +27,18 @@ namespace Moodful.Functions
         [OpenApiOperation(nameof(Get), nameof(Reviews))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(List<Review>))]
         public static async Task<IActionResult> Get(
-            [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest)
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest)
         {
+            var hasAuthorizationHeader = httpRequest.Headers.TryGetValue("Authorization", out var authorizationValue);
+            var hasHeader = httpRequest.Headers.TryGetValue("x-functions-key", out var value);
+
+            if (hasAuthorizationHeader)
+            {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var jwtToken = tokenHandler.ReadJwtToken(authorizationValue);
+            }
+
+
             await Task.FromResult(0); // this is to disable the empty async warning
             return new OkObjectResult(ReviewList);
         }
