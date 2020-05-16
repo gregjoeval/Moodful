@@ -86,7 +86,18 @@ namespace Moodful.Swagger
             ////return _documentHelper.GetOpenApiSecuritySchemes();
             return new Dictionary<string, OpenApiSecurityScheme>
             {
-                { "Bearer", new OpenApiSecurityScheme { Name = "Authorization", Type = SecuritySchemeType.ApiKey, In = ParameterLocation.Header, Description = "Add your bearer token authorization header (including the 'Bearer ' prefix)." } }
+                {
+                    "Bearer", 
+                    new OpenApiSecurityScheme 
+                    { 
+                        Name = "Authorization", 
+                        Type = SecuritySchemeType.ApiKey, 
+                        In = ParameterLocation.Header, 
+                        Description = "Add your bearer token authorization header (including the 'Bearer ' prefix).",
+                        Scheme = "Bearer",
+                        BearerFormat = "JWT"
+                    } 
+                }
             };
         }
 
