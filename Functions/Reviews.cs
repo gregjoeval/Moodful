@@ -1,15 +1,16 @@
 using Aliencube.AzureFunctions.Extensions.OpenApi.Attributes;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.OpenApi.Models;
+using Moodful.Authorization;
 using Moodful.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -19,8 +20,59 @@ namespace Moodful.Functions
 {
     public static class Reviews
     {
-        private static readonly List<Review> ReviewList = new List<Review>();
+        private static readonly Dictionary<string, Dictionary<Guid, Review>> ReviewCollection = new Dictionary<string, Dictionary<Guid, Review>>();
         private const string BasePath = "reviews";
+
+        private static string GetUserIdFromHttpRequest(HttpRequest httpRequest)
+        {
+            var token = Security.GetJWTSecurityTokenFromHttpRequestAsync(httpRequest);
+            var userId = token.Subject;
+            return userId;
+        }
+
+        private static Dictionary<Guid, Review> GetReviewsByUserIdFromHttpRequest(HttpRequest httpRequest)
+        {
+            var userId = GetUserIdFromHttpRequest(httpRequest);
+            if (ReviewCollection.TryGetValue(userId, out var reviews))
+            {
+                return reviews;
+            }
+
+            return null;
+        }
+
+        private static Dictionary<Guid, Review> UpsertReviewsByUserIdFromHttpRequest(HttpRequest httpRequest, IEnumerable<Review> reviews)
+        {
+            var userId = GetUserIdFromHttpRequest(httpRequest);
+            ReviewCollection.TryGetValue(userId, out var existingModels);
+
+            foreach(var model in reviews)
+            {
+                if (existingModels == null)
+                {
+                    existingModels = reviews.ToDictionary(o => o.Id);
+                }
+                else
+                {
+                    var wasAdded = existingModels.TryAdd(model.Id, model);
+                    if (wasAdded == false)
+                    {
+                        var existingReview = existingModels[model.Id];
+
+                        existingReview.LastEdited = DateTimeOffset.UtcNow;
+                        existingReview.Rating = model.Rating;
+                        existingReview.Tags = model.Tags;
+                        existingReview.Description = model.Description;
+
+                        existingModels[model.Id] = existingReview;
+                    }
+                }
+            }
+
+            ReviewCollection[userId] = existingModels;
+
+            return existingModels;
+        }
 
         [FunctionName(nameof(Reviews) + nameof(Get))]
         [ProducesResponseType(typeof(List<Review>), 200)]
@@ -29,18 +81,19 @@ namespace Moodful.Functions
         public static async Task<IActionResult> Get(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest)
         {
-            var hasAuthorizationHeader = httpRequest.Headers.TryGetValue("Authorization", out var authorizationValue);
-            var hasHeader = httpRequest.Headers.TryGetValue("x-functions-key", out var value);
-
-            if (hasAuthorizationHeader)
+            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
+            if (claimsPrincipal == null)
             {
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var jwtToken = tokenHandler.ReadJwtToken(authorizationValue);
+                return new UnauthorizedResult();
             }
 
+            var reviews = GetReviewsByUserIdFromHttpRequest(httpRequest);
+            if (reviews == null)
+            {
+                return new NotFoundResult();
+            }
 
-            await Task.FromResult(0); // this is to disable the empty async warning
-            return new OkObjectResult(ReviewList);
+            return new OkObjectResult(reviews.ToList());
         }
 
         [FunctionName(nameof(Reviews) + nameof(GetById))]
@@ -51,11 +104,22 @@ namespace Moodful.Functions
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Review))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public static async Task<IActionResult> GetById(
-            [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Get), Route = BasePath + "/{id}")] HttpRequest httpRequest,
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath + "/{id}")] HttpRequest httpRequest,
             Guid id)
         {
-            await Task.FromResult(0); // this is to disable the empty async warning
-            var model = ReviewList.FirstOrDefault(o => o.Id == id);
+            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
+            if (claimsPrincipal == null)
+            {
+                return new UnauthorizedResult();
+            }
+
+            var reviews = GetReviewsByUserIdFromHttpRequest(httpRequest);
+            if (reviews == null)
+            {
+                return new NotFoundResult();
+            }
+
+            var model = reviews.FirstOrDefault(o => o.Key == id).Value;
             if (model == null)
             {
                 return new NotFoundResult();
@@ -73,16 +137,24 @@ namespace Moodful.Functions
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Review))]
         [OpenApiResponseBody(HttpStatusCode.Conflict, "application/json", typeof(JObject))]
         public static async Task<IActionResult> Post(
-            [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Post), Route = BasePath)] HttpRequest httpRequest)
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = BasePath)] HttpRequest httpRequest)
         {
-            string requestBody = await new StreamReader(httpRequest.Body).ReadToEndAsync();
-            var model = JsonConvert.DeserializeObject<Review>(requestBody);
-            if (ReviewList.FirstOrDefault(o => o.Id == model.Id) != null)
+            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
+            if (claimsPrincipal == null)
             {
-                return new Microsoft.AspNetCore.Mvc.ConflictResult();
+                return new UnauthorizedResult();
             }
 
-            ReviewList.Add(model);
+            string requestBody = await new StreamReader(httpRequest.Body).ReadToEndAsync();
+            var model = JsonConvert.DeserializeObject<Review>(requestBody);
+
+            var reviews = GetReviewsByUserIdFromHttpRequest(httpRequest);            
+            if (reviews != null && reviews.ContainsKey(model.Id))
+            {
+                return new ConflictResult();
+            }
+
+            UpsertReviewsByUserIdFromHttpRequest(httpRequest, new[] { model });
             return new OkObjectResult(model);
         }
 
@@ -95,24 +167,30 @@ namespace Moodful.Functions
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Review))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public static async Task<IActionResult> Update(
-            [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Put), Route = BasePath)] HttpRequest httpRequest)
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = BasePath)] HttpRequest httpRequest)
         {
-            string requestBody = await new StreamReader(httpRequest.Body).ReadToEndAsync();
-            var model = JsonConvert.DeserializeObject<Review>(requestBody);
-            var index = ReviewList.FindIndex(o => o.Id == model.Id);
-            if (index == -1)
+            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
+            if (claimsPrincipal == null)
+            {
+                return new UnauthorizedResult();
+            }
+
+            var reviews = GetReviewsByUserIdFromHttpRequest(httpRequest);
+            if (reviews == null)
             {
                 return new NotFoundResult();
             }
 
-            var review = ReviewList[index];
-            review.LastEdited = DateTimeOffset.UtcNow;
-            review.Rating = model.Rating;
-            review.Tags = model.Tags;
-            review.Description = model.Description;
-            ReviewList[index] = review;
+            string requestBody = await new StreamReader(httpRequest.Body).ReadToEndAsync();
+            var model = JsonConvert.DeserializeObject<Review>(requestBody);
+            if (reviews?.FirstOrDefault(o => o.Key == model.Id) == null)
+            {
+                return new NotFoundResult();
+            }
 
-            return new OkObjectResult(review);
+            UpsertReviewsByUserIdFromHttpRequest(httpRequest, new[] { model });
+
+            return new OkObjectResult(model);
         }
 
         [FunctionName(nameof(Reviews) + nameof(Delete))]
@@ -126,9 +204,20 @@ namespace Moodful.Functions
             [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Delete), Route = BasePath + "/{id}")] HttpRequest httpRequest,
             Guid id)
         {
-            await Task.FromResult(0); // this is to disable the empty async warning
-            var count = ReviewList.RemoveAll(o => o.Id == id);
-            if (count == 0)
+            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
+            if (claimsPrincipal == null)
+            {
+                return new UnauthorizedResult();
+            }
+
+            var reviews = GetReviewsByUserIdFromHttpRequest(httpRequest);
+            if (reviews == null)
+            {
+                return new NotFoundResult();
+            }
+
+            var removed = reviews.Remove(id);
+            if (!removed)
             {
                 return new NotFoundResult();
             }
