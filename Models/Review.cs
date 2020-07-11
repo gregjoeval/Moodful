@@ -9,8 +9,8 @@ namespace Moodful.Models
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        [Required]
-        public Guid UserId { get; set; }
+        // TODO: put this on db model
+        //public Guid UserId { get; set; }
 
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
