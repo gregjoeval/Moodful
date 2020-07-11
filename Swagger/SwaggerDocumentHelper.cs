@@ -10,6 +10,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Serialization;
+
 namespace Moodful.Swagger
 {
     public class SwaggerDocumentHelper : IDocumentHelper

@@ -1,5 +1,4 @@
 ﻿using Aliencube.AzureFunctions.Extensions.OpenApi;
-using Aliencube.AzureFunctions.Extensions.OpenApi.Abstractions;
 using Aliencube.AzureFunctions.Extensions.OpenApi.Attributes;
 using Aliencube.AzureFunctions.Extensions.OpenApi.Extensions;
 using Microsoft.AspNetCore.Http;

@@ -2,6 +2,7 @@
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
+using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -13,19 +14,19 @@ namespace Moodful.Authorization
     /// <summary>
     /// Reference: https://liftcodeplay.com/2017/11/25/validating-auth0-jwt-tokens-in-azure-functions-aka-how-to-use-auth0-with-azure-functions/
     /// </summary>
-    public static class Security
+    public class Security
     {
-        private static readonly IConfigurationManager<OpenIdConnectConfiguration> _configurationManager;
+        private readonly static IConfigurationManager<OpenIdConnectConfiguration> _configurationManager;
 
-        private static readonly string ISSUER = "https://gjv-dev.auth0.com/"; // TODO: should pull from config
-        private static readonly string AUDIENCE = "https://gjv-dev-api-water-boy.herokuapp.com"; // TODO: should pull from config, TODO: this is a temp value
+        private readonly static string Issuer = Environment.GetEnvironmentVariable("JWT-TOKEN-ISSUER");
+        private readonly static string Audience = Environment.GetEnvironmentVariable("JWT-TOKEN-AUDIENCE");
 
         static Security()
         {
-            var documentRetriever = new HttpDocumentRetriever { RequireHttps = ISSUER.StartsWith("https://") };
+            var documentRetriever = new HttpDocumentRetriever { RequireHttps = Issuer.StartsWith("https://") };
 
             _configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
-                $"{ISSUER}.well-known/openid-configuration",
+                $"{Issuer}.well-known/openid-configuration",
                 new OpenIdConnectConfigurationRetriever(),
                 documentRetriever
             );
@@ -48,7 +49,7 @@ namespace Moodful.Authorization
             return null;
         }
 
-        public static async Task<ClaimsPrincipal> ValidateTokenAsync(AuthenticationHeaderValue value)
+        public async Task<ClaimsPrincipal> ValidateTokenAsync(AuthenticationHeaderValue value)
         {
             if (value?.Scheme != "Bearer")
                 return null;
@@ -58,9 +59,9 @@ namespace Moodful.Authorization
             var validationParameter = new TokenValidationParameters
             {
                 RequireSignedTokens = true,
-                ValidAudience = AUDIENCE,
+                ValidAudience = Audience,
                 ValidateAudience = true,
-                ValidIssuer = ISSUER,
+                ValidIssuer = Issuer,
                 ValidateIssuer = true,
                 ValidateIssuerSigningKey = true,
                 ValidateLifetime = true,
@@ -95,7 +96,7 @@ namespace Moodful.Authorization
             return result;
         }
 
-        public static async Task<ClaimsPrincipal> AuthenticateHttpRequestAsync(HttpRequest httpRequest)
+        public async Task<ClaimsPrincipal> AuthenticateHttpRequestAsync(HttpRequest httpRequest)
         {
             var authenticationHeader = ParseAuthenticationHeaderFromHttpRequest(httpRequest);
 

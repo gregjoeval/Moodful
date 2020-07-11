@@ -13,15 +13,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Moodful.Functions
 {
     public class Tags
     {
+        private Security _security;
         private static readonly Dictionary<string, Dictionary<Guid, Tag>> TagCollection = new Dictionary<string, Dictionary<Guid, Tag>>();
         private const string BasePath = "tags";
+
+        public Tags()
+        {
+            _security = new Security();
+        }
 
         private static string GetUserIdFromHttpRequest(HttpRequest httpRequest)
         {
@@ -76,10 +81,10 @@ namespace Moodful.Functions
         [ProducesResponseType(typeof(List<Tag>), 200)]
         [OpenApiOperation(nameof(Get), nameof(Tags))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(List<Tag>))]
-        public static async Task<IActionResult> Get(
+        public async Task<IActionResult> Get(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest)
         {
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
+            var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
                 return new UnauthorizedResult();
@@ -101,11 +106,11 @@ namespace Moodful.Functions
         [OpenApiParameter("id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
-        public static async Task<IActionResult> GetById(
+        public async Task<IActionResult> GetById(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath + "/{id}")] HttpRequest httpRequest,
             Guid id)
         {
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
+            var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
                 return new UnauthorizedResult();
@@ -134,10 +139,10 @@ namespace Moodful.Functions
         [OpenApiRequestBody("application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.Conflict, "application/json", typeof(JObject))]
-        public static async Task<IActionResult> Post(
+        public async Task<IActionResult> Post(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = BasePath)] HttpRequest httpRequest)
         {
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
+            var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
                 return new UnauthorizedResult();
@@ -164,10 +169,10 @@ namespace Moodful.Functions
         [OpenApiRequestBody("application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
-        public static async Task<IActionResult> Update(
+        public async Task<IActionResult> Update(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = BasePath)] HttpRequest httpRequest)
         {
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
+            var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
                 return new UnauthorizedResult();
@@ -198,11 +203,11 @@ namespace Moodful.Functions
         [OpenApiParameter("id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
-        public static async Task<IActionResult> Delete(
+        public async Task<IActionResult> Delete(
             [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Delete), Route = BasePath + "/{id}")] HttpRequest httpRequest,
             Guid id)
         {
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
+            var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
                 return new UnauthorizedResult();
