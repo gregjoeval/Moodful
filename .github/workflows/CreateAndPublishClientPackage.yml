@@ -29,12 +29,12 @@ jobs:
             ../../Scripts/GenerateClientPackage.ps1 -workingDirectory ${{ env.CLIENT_PACKAGE_FOLDER }} -clientName ${{ env.CLIENT_PACKAGE_NAME }} -clientVersion $nextVersion
             ../../Scripts/PrepareClientPackage.ps1 -workingDirectory ${{ env.CLIENT_PACKAGE_FOLDER }}
             Write-Host ("`n`n The client package was successfully created in folder '{0}'. `n`n " -f $packageFolder)
+    - name: Change Current Location
+      shell: pwsh
+      run: Push-Location ${{ env.CLIENT_PACKAGE_FOLDER }}
     - name: install
-      workingDirectory: ${{ env.CLIENT_PACKAGE_FOLDER }}
       run: npm install
     - name: build
-      workingDirectory: ${{ env.CLIENT_PACKAGE_FOLDER }}
       run: npm run build
     - name: publish
-      workingDirectory: ${{ env.CLIENT_PACKAGE_FOLDER }}
       run: npm publish --access public
