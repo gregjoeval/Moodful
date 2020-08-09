@@ -79,11 +79,11 @@ namespace Moodful.Functions
             return existingModels;
         }
 
-        [FunctionName(nameof(Reviews) + nameof(Get))]
+        [FunctionName(nameof(Reviews) + nameof(GetReviews))]
         [ProducesResponseType(typeof(List<Review>), 200)]
-        [OpenApiOperation(nameof(Get), nameof(Reviews))]
+        [OpenApiOperation(nameof(GetReviews), nameof(Reviews))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(List<Review>))]
-        public async Task<IActionResult> Get(
+        public async Task<IActionResult> GetReviews(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest)
         {
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
@@ -101,14 +101,14 @@ namespace Moodful.Functions
             return new OkObjectResult(reviews.ToList());
         }
 
-        [FunctionName(nameof(Reviews) + nameof(GetById))]
+        [FunctionName(nameof(Reviews) + nameof(GetReviewsById))]
         [ProducesResponseType(typeof(Review), 200)]
         [ProducesResponseType(404)]
-        [OpenApiOperation(nameof(GetById), nameof(Reviews))]
+        [OpenApiOperation(nameof(GetReviewsById), nameof(Reviews))]
         [OpenApiParameter("id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Review))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
-        public async Task<IActionResult> GetById(
+        public async Task<IActionResult> GetReviewsById(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath + "/{id}")] HttpRequest httpRequest,
             Guid id)
         {
@@ -133,15 +133,15 @@ namespace Moodful.Functions
             return new OkObjectResult(model);
         }
 
-        [FunctionName(nameof(Reviews) + nameof(Post))]
+        [FunctionName(nameof(Reviews) + nameof(PostReviews))]
         [ProducesResponseType(typeof(Review), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(409)]
-        [OpenApiOperation(nameof(Post), nameof(Reviews))]
+        [OpenApiOperation(nameof(PostReviews), nameof(Reviews))]
         [OpenApiRequestBody("application/json", typeof(Review))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Review))]
         [OpenApiResponseBody(HttpStatusCode.Conflict, "application/json", typeof(JObject))]
-        public async Task<IActionResult> Post(
+        public async Task<IActionResult> PostReviews(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = BasePath)] HttpRequest httpRequest)
         {
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
@@ -163,15 +163,15 @@ namespace Moodful.Functions
             return new OkObjectResult(model);
         }
 
-        [FunctionName(nameof(Reviews) + nameof(Update))]
+        [FunctionName(nameof(Reviews) + nameof(UpdateReviews))]
         [ProducesResponseType(typeof(Review), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        [OpenApiOperation(nameof(Update), nameof(Reviews))]
+        [OpenApiOperation(nameof(UpdateReviews), nameof(Reviews))]
         [OpenApiRequestBody("application/json", typeof(Review))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Review))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
-        public async Task<IActionResult> Update(
+        public async Task<IActionResult> UpdateReviews(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = BasePath)] HttpRequest httpRequest)
         {
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
@@ -198,14 +198,14 @@ namespace Moodful.Functions
             return new OkObjectResult(model);
         }
 
-        [FunctionName(nameof(Reviews) + nameof(Delete))]
+        [FunctionName(nameof(Reviews) + nameof(DeleteReviews))]
         [ProducesResponseType(typeof(Review), 200)]
         [ProducesResponseType(typeof(Review), 404)]
-        [OpenApiOperation(nameof(Delete), nameof(Reviews))]
+        [OpenApiOperation(nameof(DeleteReviews), nameof(Reviews))]
         [OpenApiParameter("id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
-        public async Task<IActionResult> Delete(
+        public async Task<IActionResult> DeleteReviews(
             [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Delete), Route = BasePath + "/{id}")] HttpRequest httpRequest,
             Guid id)
         {

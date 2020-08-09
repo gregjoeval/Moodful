@@ -77,11 +77,11 @@ namespace Moodful.Functions
             return existingModels;
         }
 
-        [FunctionName(nameof(Tags) + nameof(Get))]
+        [FunctionName(nameof(Tags) + nameof(GetTags))]
         [ProducesResponseType(typeof(List<Tag>), 200)]
-        [OpenApiOperation(nameof(Get), nameof(Tags))]
+        [OpenApiOperation(nameof(GetTags), nameof(Tags))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(List<Tag>))]
-        public async Task<IActionResult> Get(
+        public async Task<IActionResult> GetTags(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest)
         {
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
@@ -99,14 +99,14 @@ namespace Moodful.Functions
             return new OkObjectResult(tags.ToList());
         }
 
-        [FunctionName(nameof(Tags) + nameof(GetById))]
+        [FunctionName(nameof(Tags) + nameof(GetTagsById))]
         [ProducesResponseType(typeof(Tag), 200)]
         [ProducesResponseType(404)]
-        [OpenApiOperation(nameof(GetById), nameof(Tags))]
+        [OpenApiOperation(nameof(GetTagsById), nameof(Tags))]
         [OpenApiParameter("id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
-        public async Task<IActionResult> GetById(
+        public async Task<IActionResult> GetTagsById(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath + "/{id}")] HttpRequest httpRequest,
             Guid id)
         {
@@ -131,15 +131,15 @@ namespace Moodful.Functions
             return new OkObjectResult(model);
         }
 
-        [FunctionName(nameof(Tags) + nameof(Post))]
+        [FunctionName(nameof(Tags) + nameof(PostTags))]
         [ProducesResponseType(typeof(Tag), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(409)]
-        [OpenApiOperation(nameof(Post), nameof(Tags))]
+        [OpenApiOperation(nameof(PostTags), nameof(Tags))]
         [OpenApiRequestBody("application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.Conflict, "application/json", typeof(JObject))]
-        public async Task<IActionResult> Post(
+        public async Task<IActionResult> PostTags(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = BasePath)] HttpRequest httpRequest)
         {
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
@@ -161,15 +161,15 @@ namespace Moodful.Functions
             return new OkObjectResult(model);
         }
 
-        [FunctionName(nameof(Tags) + nameof(Update))]
+        [FunctionName(nameof(Tags) + nameof(UpdateTags))]
         [ProducesResponseType(typeof(Tag), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        [OpenApiOperation(nameof(Update), nameof(Tags))]
+        [OpenApiOperation(nameof(UpdateTags), nameof(Tags))]
         [OpenApiRequestBody("application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
-        public async Task<IActionResult> Update(
+        public async Task<IActionResult> UpdateTags(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = BasePath)] HttpRequest httpRequest)
         {
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
@@ -196,14 +196,14 @@ namespace Moodful.Functions
             return new OkObjectResult(model);
         }
 
-        [FunctionName(nameof(Tags) + nameof(Delete))]
+        [FunctionName(nameof(Tags) + nameof(DeleteTags))]
         [ProducesResponseType(typeof(Tag), 200)]
         [ProducesResponseType(typeof(Tag), 404)]
-        [OpenApiOperation(nameof(Delete), nameof(Tags))]
+        [OpenApiOperation(nameof(DeleteTags), nameof(Tags))]
         [OpenApiParameter("id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
-        public async Task<IActionResult> Delete(
+        public async Task<IActionResult> DeleteTags(
             [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Delete), Route = BasePath + "/{id}")] HttpRequest httpRequest,
             Guid id)
         {

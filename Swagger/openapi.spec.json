@@ -19,7 +19,7 @@
         "tags": [
           "Reviews"
         ],
-        "operationId": "Delete",
+        "operationId": "DeleteReviews",
         "parameters": [
           {
             "name": "id",
@@ -65,7 +65,7 @@
         "tags": [
           "Reviews"
         ],
-        "operationId": "GetById",
+        "operationId": "GetReviewsById",
         "parameters": [
           {
             "name": "id",
@@ -106,7 +106,7 @@
         "tags": [
           "Reviews"
         ],
-        "operationId": "Get",
+        "operationId": "GetReviews",
         "responses": {
           "200": {
             "description": "Payload of Array of Review",
@@ -127,7 +127,7 @@
         "tags": [
           "Reviews"
         ],
-        "operationId": "Post",
+        "operationId": "PostReviews",
         "requestBody": {
           "content": {
             "application/json": {
@@ -164,7 +164,7 @@
         "tags": [
           "Reviews"
         ],
-        "operationId": "Update",
+        "operationId": "UpdateReviews",
         "requestBody": {
           "content": {
             "application/json": {
@@ -203,7 +203,7 @@
         "tags": [
           "Tags"
         ],
-        "operationId": "Delete",
+        "operationId": "DeleteTags",
         "parameters": [
           {
             "name": "id",
@@ -249,7 +249,7 @@
         "tags": [
           "Tags"
         ],
-        "operationId": "GetById",
+        "operationId": "GetTagsById",
         "parameters": [
           {
             "name": "id",
@@ -290,7 +290,7 @@
         "tags": [
           "Tags"
         ],
-        "operationId": "Get",
+        "operationId": "GetTags",
         "responses": {
           "200": {
             "description": "Payload of Array of Tag",
@@ -311,7 +311,7 @@
         "tags": [
           "Tags"
         ],
-        "operationId": "Post",
+        "operationId": "PostTags",
         "requestBody": {
           "content": {
             "application/json": {
@@ -348,7 +348,7 @@
         "tags": [
           "Tags"
         ],
-        "operationId": "Update",
+        "operationId": "UpdateTags",
         "requestBody": {
           "content": {
             "application/json": {
