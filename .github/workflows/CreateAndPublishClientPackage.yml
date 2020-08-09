@@ -8,7 +8,7 @@ on:
 env:
   NODE_VERSION: '10.x'                # set this to the node version to use
   CLIENT_PACKAGE_NAME: '@gjv/moodful-api-client'
-  PACKAGE_FOLDER: './client-package'
+  CLIENT_PACKAGE_FOLDER: './client-package'
   OPENAPI_SPECIFICATION_LOCATION: '..\..\Swagger\openapi.spec.json'
   BUMP_KIND: 'patch'
 
@@ -22,15 +22,19 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ env.NODE_VERSION }}
-    - name: Create Client Package
+    - name: Create client package
       shell: pwsh
-      run: ../../Scripts/CreateClientPackage.ps1 -packageName ${{ env.CLIENT_PACKAGE_NAME }} -bumpKind ${{ env.BUMP_KIND }} -packageFolder ${{ env.PACKAGE_FOLDER }}
-    - name: Change Current Location
-      shell: pwsh
-      run: Push-Location ${{ env.PACKAGE_FOLDER }}
+      run: |
+            $nextVersion = ../../Scripts/BumpNpmPackageVersion.ps1 -packageName ${{ env.CLIENT_PACKAGE_NAME }} -bumpKind ${{ env.BUMP_KIND }}
+            ../../Scripts/GenerateClientPackage.ps1 -workingDirectory ${{ env.CLIENT_PACKAGE_FOLDER }} -clientName ${{ env.CLIENT_PACKAGE_NAME }} -clientVersion $nextVersion
+            ../../Scripts/PrepareClientPackage.ps1 -workingDirectory ${{ env.CLIENT_PACKAGE_FOLDER }}
+            Write-Host ("`n`n The client package was successfully created in folder '{0}'. `n`n " -f $packageFolder)
     - name: install
+      workingDirectory: ${{ env.CLIENT_PACKAGE_FOLDER }}
       run: npm install
     - name: build
+      workingDirectory: ${{ env.CLIENT_PACKAGE_FOLDER }}
       run: npm run build
     - name: publish
+      workingDirectory: ${{ env.CLIENT_PACKAGE_FOLDER }}
       run: npm publish --access public
