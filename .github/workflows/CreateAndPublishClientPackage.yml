@@ -8,6 +8,8 @@ on:
 env:
   NODE_VERSION: '10.x'                # set this to the node version to use
   CLIENT_PACKAGE_NAME: '@gjv/moodful-api-client'
+  PACKAGE_FOLDER: './client-package'
+  OPENAPI_SPECIFICATION_LOCATION: '..\..\Swagger\openapi.spec.json'
   BUMP_KIND: 'patch'
 
 jobs:
@@ -20,10 +22,15 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ env.NODE_VERSION }}
-    - name: npm install, build, and test
-      run: |
-        npm view ${{ env.CLIENT_PACKAGE_NAME }} version
-    - name: Find and Bump NPM Package Version
+    - name: Create Client Package
       shell: pwsh
-      run: |
-        ../../Swagger/BumpNpmPackageVersion.ps1 -packageName ${{ env.CLIENT_PACKAGE_NAME }} -bumpKind ${{ env.BUMP_KIND }}
+      run: ../../Scripts/CreateClientPackage.ps1 -packageName ${{ env.CLIENT_PACKAGE_NAME }} -bumpKind ${{ env.BUMP_KIND }} -packageFolder ${{ env.PACKAGE_FOLDER }}
+    - name: Change Current Location
+      shell: pwsh
+      run: Push-Location ${{ env.PACKAGE_FOLDER }}
+    - name: install
+      run: npm install
+    - name: build
+      run: npm run build
+    - name: publish
+      run: npm publish --access public
