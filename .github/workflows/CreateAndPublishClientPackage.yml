@@ -1,0 +1,29 @@
+name: CreateAndPublishClientPackage
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  NODE_VERSION: '10.x'                # set this to the node version to use
+  CLIENT_PACKAGE_NAME: '@gjv/moodful-api-client'
+  BUMP_KIND: 'patch'
+
+jobs:
+  create-and-publish:
+    name: Create and Publish Client Package
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    - name: npm install, build, and test
+      run: |
+        npm view ${{ env.CLIENT_PACKAGE_NAME }} version
+    - name: Find and Bump NPM Package Version
+      shell: pwsh
+      run: |
+        ../../Swagger/BumpNpmPackageVersion.ps1 -packageName ${{ env.CLIENT_PACKAGE_NAME }} -bumpKind ${{ env.BUMP_KIND }}
