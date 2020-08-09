@@ -9,7 +9,7 @@ env:
   NODE_VERSION: '10.x'                # set this to the node version to use
   CLIENT_PACKAGE_NAME: '@gjv/moodful-api-client'
   CLIENT_PACKAGE_FOLDER: './client-package'
-  OPENAPI_SPECIFICATION_LOCATION: '../Swagger/openapi.spec.json'
+  OPENAPI_SPECIFICATION_LOCATION: './Swagger/openapi.spec.json'
   BUMP_KIND: 'patch'
 
 jobs:
