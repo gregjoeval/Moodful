@@ -9,7 +9,7 @@ Write-Host ("Moving files matching '{0}' into '{1}' folder..." -f ($filesToMove 
 
 try {
     New-Item -ItemType directory -Path $srcDirectoryPath
-}
+} catch {}
 
 Move-Item -Path $filesToMove -Destination $srcDirectoryPath
 
