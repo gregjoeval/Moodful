@@ -3,7 +3,7 @@
 [string] $clientName,
 [Parameter(Mandatory)]
 [string] $clientVersion,
-[string] $outputDirectory = "./client-package"
+[string] $outputDirectory = "./client-package",
 [string] $specificationFileLocation = "../Swagger/openapi.spec.json"
 )
 
