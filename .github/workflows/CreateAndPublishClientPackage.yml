@@ -22,6 +22,7 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ env.NODE_VERSION }}
+    # - run: npm install -g @openapitools/openapi-generator-cli@latest
     - name: Create client package
       shell: pwsh
       run: |
@@ -29,12 +30,9 @@ jobs:
             ../../Scripts/GenerateClientPackage.ps1 -specificationFileLocation ${{ env.OPENAPI_SPECIFICATION_LOCATION }} -outputDirectory ${{ env.CLIENT_PACKAGE_FOLDER }} -clientName ${{ env.CLIENT_PACKAGE_NAME }} -clientVersion $nextVersion
             ../../Scripts/PrepareClientPackage.ps1 -workingDirectory ${{ env.CLIENT_PACKAGE_FOLDER }}
             Write-Host ("`n`n The client package was successfully created in folder '{0}'. `n`n " -f $packageFolder)
-    - name: Change Current Location
+    - name: Change Current Location to ${{ env.CLIENT_PACKAGE_FOLDER }}
       shell: pwsh
       run: Push-Location ${{ env.CLIENT_PACKAGE_FOLDER }}
-    - name: install
-      run: npm install
-    - name: build
-      run: npm run build
-    - name: publish
-      run: npm publish --access public
+    - run: npm install
+    - run: npm run build
+    - run: npm publish --access public
