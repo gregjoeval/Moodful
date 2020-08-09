@@ -26,7 +26,7 @@ jobs:
       shell: pwsh
       run: |
             $nextVersion = ../../Scripts/BumpNpmPackageVersion.ps1 -packageName ${{ env.CLIENT_PACKAGE_NAME }} -bumpKind ${{ env.BUMP_KIND }}
-            ../../Scripts/GenerateClientPackage.ps1 -outputDirectory ${{ env.CLIENT_PACKAGE_FOLDER }} -clientName ${{ env.CLIENT_PACKAGE_NAME }} -clientVersion $nextVersion
+            ../../Scripts/GenerateClientPackage.ps1 -specificationFileLocation ${{ env.OPENAPI_SPECIFICATION_LOCATION }} -outputDirectory ${{ env.CLIENT_PACKAGE_FOLDER }} -clientName ${{ env.CLIENT_PACKAGE_NAME }} -clientVersion $nextVersion
             ../../Scripts/PrepareClientPackage.ps1 -workingDirectory ${{ env.CLIENT_PACKAGE_FOLDER }}
             Write-Host ("`n`n The client package was successfully created in folder '{0}'. `n`n " -f $packageFolder)
     - name: Change Current Location
