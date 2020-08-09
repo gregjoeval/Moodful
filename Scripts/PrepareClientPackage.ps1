@@ -6,7 +6,11 @@
 $filesToMove = @(("{0}/*.ts" -f $workingDirectory), ("{0}/apis" -f $workingDirectory), ("{0}/models" -f $workingDirectory))
 $srcDirectoryPath = ("{0}/src" -f $workingDirectory)
 Write-Host ("Moving files matching '{0}' into '{1}' folder..." -f ($filesToMove -join ', '), $srcDirectoryPath)
-New-Item -ItemType directory -Path $srcDirectoryPath
+
+try {
+    New-Item -ItemType directory -Path $srcDirectoryPath
+}
+
 Move-Item -Path $filesToMove -Destination $srcDirectoryPath
 
 #
