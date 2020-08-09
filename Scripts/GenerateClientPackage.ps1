@@ -3,7 +3,8 @@
 [string] $clientName,
 [Parameter(Mandatory)]
 [string] $clientVersion,
-[string] $workingDirectory = "./client-package"
+[string] $outputDirectory = "./client-package"
+[string] $specificationFileLocation = "../Swagger/openapi.spec.json"
 )
 
 try {
@@ -15,9 +16,9 @@ try {
 try {
     openapi-generator version
 
-    openapi-generator validate -i openapi.spec.json --recommend
+    openapi-generator validate -i $specificationFileLocation --recommend
 
-    openapi-generator generate -i openapi.spec.json -g typescript-fetch -o $('{0}' -f $workingDirectory) -p npmName=$('{0}' -f $clientName) -p npmVersion=$('{0}' -f $clientVersion) -p withInterfaces=true -p useSingleRequestParameter=true -p prefixParameterInterfaces=true 
+    openapi-generator generate -i $specificationFileLocation -g typescript-fetch -o $('{0}' -f $outputDirectory) -p npmName=$('{0}' -f $clientName) -p npmVersion=$('{0}' -f $clientVersion) -p withInterfaces=true -p useSingleRequestParameter=true -p prefixParameterInterfaces=true 
 
     Write-Host "`n`n 'openapi-generator' successfully created the client package. `n`n"
 } catch {

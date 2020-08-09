@@ -1,13 +1,13 @@
 Param(
 [string] $packageName = "@gjv/moodful-api-client",
 [string] $packageFolder = "./client-package",
-[string] $packageVersion,
+[string] $packageVersionOverride,
 [string] $bumpKind = "patch"
 )
 
 # use version provided if any
-if ($packageVersion.Length -gt 0) {
-    $nextVersion = $packageVersion
+if ($packageVersionOverride.Length -gt 0) {
+    $nextVersion = $packageVersionOverride
 } else {
     # otherwise, bump the version of the package in the registry
     $nextVersion = .\BumpNpmPackageVersion.ps1 -packageName $packageName -bumpKind $bumpKind

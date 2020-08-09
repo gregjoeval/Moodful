@@ -5,10 +5,12 @@
     <UserSecretsId>8a939cef-086b-4d93-879f-de38b99c4bec</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Swagger\BumpNpmPackageVersion.ps1" />
     <None Remove="Swagger\CreateAndPublishClientPackage.ps1" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Swagger\CreateAndPublishClientPackage.ps1" />
+    <Compile Include="Scripts\BumpNpmPackageVersion.ps1" />
+    <Compile Include="Scripts\CreateAndPublishClientPackage.ps1" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Aliencube.AzureFunctions.Extensions.OpenApi" Version="1.5.4" />

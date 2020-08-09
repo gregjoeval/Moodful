@@ -1,5 +1,5 @@
 ﻿Param(
-[string] $workingDirectory = "./openapi/js-client"
+[string] $workingDirectory = "./client-package"
 )
 
 # move .ts files into src
