@@ -31,10 +31,10 @@ jobs:
             ../../Scripts/PrepareClientPackage.ps1 -workingDirectory ${{ env.CLIENT_PACKAGE_FOLDER }}
             Write-Host ("`n`n The client package was successfully created in folder '${{ env.CLIENT_PACKAGE_FOLDER }}'. `n`n ")
     - run: npm install
-      workspace: ${{ env.CLIENT_PACKAGE_FOLDER }}
+      working-directory: ${{ env.CLIENT_PACKAGE_FOLDER }}
     - run: npm run build
-      workspace: ${{ env.CLIENT_PACKAGE_FOLDER }}
+      working-directory: ${{ env.CLIENT_PACKAGE_FOLDER }}
     - run: npm publish --access public
-      workspace: ${{ env.CLIENT_PACKAGE_FOLDER }}
+      working-directory: ${{ env.CLIENT_PACKAGE_FOLDER }}
       env:
         NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
