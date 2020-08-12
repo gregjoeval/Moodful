@@ -54,6 +54,9 @@ $packageJsonData.scripts | Add-Member -Force -NotePropertyName build:dtsRollup -
 # prepare fires too many times, just run build (https://docs.npmjs.com/misc/scripts)
 $packageJsonData.scripts = $packageJsonData.scripts | Select-Object -Property * -ExcludeProperty prepare
 
+# add publishConfig
+$packageJsonData | Add-Member -Force -NotePropertyName publishConfig -NotePropertyValue @{ access="public" }
+
 # define entry files
 $typeDefinitionFile = ("dist/{0}.d.ts" -f $clientName)
 
