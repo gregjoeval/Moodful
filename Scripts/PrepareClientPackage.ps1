@@ -67,7 +67,7 @@ $packageJsonData | Add-Member -Force -NotePropertyName module -NotePropertyValue
 $packageJsonData | Add-Member -Force -NotePropertyName sideEffects -NotePropertyValue $false
 
 # add repository
-$packageJsonData | Add-Member -Force -NotePropertyName repository -NotePropertyValue @{ type="git", url="git+https://github.com/gregjoeval/Moodful.git" }
+$packageJsonData | Add-Member -Force -NotePropertyName repository -NotePropertyValue @{ type="git"; url="git+https://github.com/gregjoeval/Moodful.git" }
 
 # add files
 $packageJsonData | Add-Member -Force -NotePropertyName files -NotePropertyValue @(
