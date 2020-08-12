@@ -34,7 +34,7 @@ jobs:
       working-directory: ${{ env.CLIENT_PACKAGE_FOLDER }}
     - run: npm run build
       working-directory: ${{ env.CLIENT_PACKAGE_FOLDER }}
-    - run: npm publish --access public
+    - run: npm publish
       working-directory: ${{ env.CLIENT_PACKAGE_FOLDER }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
