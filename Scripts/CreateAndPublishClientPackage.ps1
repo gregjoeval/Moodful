@@ -13,7 +13,7 @@ if ($packageVersionOverride.Length -gt 0) {
     $nextVersion = .\BumpNpmPackageVersion.ps1 -packageName $packageName -bumpKind $bumpKind
 }
 
-.\GenerateClientPackage.ps1 -workingDirectory $packageFolder -clientName $packageName -clientVersion $nextVersion
+.\GenerateClientPackage.ps1 -outputDirectory $packageFolder -clientName $packageName -clientVersion $nextVersion
 
 .\PrepareClientPackage.ps1 -workingDirectory $packageFolder
 

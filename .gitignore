@@ -263,7 +263,4 @@ paket-files/
 __pycache__/
 *.pyc
 
-Swagger/node_modules
-Swagger/package-lock.json
-Swagger/tsconfig.json
-Swagger/client-package
+Scripts/client-package

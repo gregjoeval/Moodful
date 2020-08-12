@@ -11,12 +11,18 @@ function bumpVersion($kind, $version) {
     switch ($kind) {
         "major" {
             $major = [int]$major + 1
+            $minor = 0
+            $patch = 0
+            break;
         }
         "minor" {
             $minor = [int]$minor + 1
+            $patch = 0
+            break;
         }
         "patch" {
             $patch = [int]$patch + 1
+            break;
         }
     }
 
