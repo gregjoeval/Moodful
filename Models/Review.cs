@@ -14,7 +14,9 @@ namespace Moodful.Models
 
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
-        public DateTimeOffset? LastEdited { get; set; } = null;
+        public DateTimeOffset? LastModified { get; set; } = null;
+
+        public bool Secret { get; set; }
 
         [Required]
         public int Rating { get; set; }

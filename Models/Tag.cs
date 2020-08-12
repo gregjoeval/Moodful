@@ -11,8 +11,10 @@ namespace Moodful.Models
         [Required]
         public string Title { get; set; }
 
+        public string Color { get; set; }
+
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
-        public DateTimeOffset? LastEdited { get; set; } = null;
+        public DateTimeOffset? LastModified { get; set; } = null;
     }
 }

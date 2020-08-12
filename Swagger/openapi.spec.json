@@ -396,10 +396,13 @@
             "type": "string",
             "format": "date-time"
           },
-          "lastEdited": {
+          "lastModified": {
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "secret": {
+            "type": "boolean"
           },
           "rating": {
             "type": "integer",
@@ -420,11 +423,14 @@
                 "title": {
                   "type": "string"
                 },
+                "color": {
+                  "type": "string"
+                },
                 "createdAt": {
                   "type": "string",
                   "format": "date-time"
                 },
-                "lastEdited": {
+                "lastModified": {
                   "type": "string",
                   "format": "date-time",
                   "nullable": true
@@ -444,11 +450,14 @@
           "title": {
             "type": "string"
           },
+          "color": {
+            "type": "string"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
           },
-          "lastEdited": {
+          "lastModified": {
             "type": "string",
             "format": "date-time",
             "nullable": true

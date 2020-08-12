@@ -35,9 +35,8 @@ namespace Moodful.Functions
             return userId;
         }
 
-        private static Dictionary<Guid, Tag> GetTagsByUserIdFromHttpRequest(HttpRequest httpRequest)
+        private static Dictionary<Guid, Tag> GetTagsByUserId(string userId)
         {
-            var userId = GetUserIdFromHttpRequest(httpRequest);
             if (TagCollection.TryGetValue(userId, out var tags))
             {
                 return tags;
@@ -46,9 +45,8 @@ namespace Moodful.Functions
             return null;
         }
 
-        private static Dictionary<Guid, Tag> UpsertTagsByUserIdFromHttpRequest(HttpRequest httpRequest, IEnumerable<Tag> tags)
+        private static Dictionary<Guid, Tag> UpsertTagsByUserId(string userId, IEnumerable<Tag> tags)
         {
-            var userId = GetUserIdFromHttpRequest(httpRequest);
             TagCollection.TryGetValue(userId, out var existingModels);
 
             foreach (var model in tags)
@@ -64,8 +62,9 @@ namespace Moodful.Functions
                     {
                         var existingTag = existingModels[model.Id];
 
-                        existingTag.LastEdited = DateTimeOffset.UtcNow;
+                        existingTag.LastModified = DateTimeOffset.UtcNow;
                         existingTag.Title = model.Title;
+                        existingTag.Color = model.Color;
 
                         existingModels[model.Id] = existingTag;
                     }
@@ -90,7 +89,8 @@ namespace Moodful.Functions
                 return new UnauthorizedResult();
             }
 
-            var tags = GetTagsByUserIdFromHttpRequest(httpRequest);
+            var userId = GetUserIdFromHttpRequest(httpRequest);
+            var tags = GetTagsByUserId(userId);
             if (tags == null)
             {
                 return new NotFoundResult();
@@ -116,7 +116,8 @@ namespace Moodful.Functions
                 return new UnauthorizedResult();
             }
 
-            var reviews = GetTagsByUserIdFromHttpRequest(httpRequest);
+            var userId = GetUserIdFromHttpRequest(httpRequest);
+            var reviews = GetTagsByUserId(userId);
             if (reviews == null)
             {
                 return new NotFoundResult();
@@ -151,13 +152,14 @@ namespace Moodful.Functions
             string requestBody = await new StreamReader(httpRequest.Body).ReadToEndAsync();
             var model = JsonConvert.DeserializeObject<Tag>(requestBody);
 
-            var reviews = GetTagsByUserIdFromHttpRequest(httpRequest);
+            var userId = GetUserIdFromHttpRequest(httpRequest);
+            var reviews = GetTagsByUserId(userId);
             if (reviews != null && reviews.ContainsKey(model.Id))
             {
                 return new ConflictResult();
             }
 
-            UpsertTagsByUserIdFromHttpRequest(httpRequest, new[] { model });
+            UpsertTagsByUserId(userId, new[] { model });
             return new OkObjectResult(model);
         }
 
@@ -178,7 +180,8 @@ namespace Moodful.Functions
                 return new UnauthorizedResult();
             }
 
-            var reviews = GetTagsByUserIdFromHttpRequest(httpRequest);
+            var userId = GetUserIdFromHttpRequest(httpRequest);
+            var reviews = GetTagsByUserId(userId);
             if (reviews == null)
             {
                 return new NotFoundResult();
@@ -191,7 +194,7 @@ namespace Moodful.Functions
                 return new NotFoundResult();
             }
 
-            UpsertTagsByUserIdFromHttpRequest(httpRequest, new[] { model });
+            UpsertTagsByUserId(userId, new[] { model });
 
             return new OkObjectResult(model);
         }
@@ -213,7 +216,8 @@ namespace Moodful.Functions
                 return new UnauthorizedResult();
             }
 
-            var reviews = GetTagsByUserIdFromHttpRequest(httpRequest);
+            var userId = GetUserIdFromHttpRequest(httpRequest);
+            var reviews = GetTagsByUserId(userId);
             if (reviews == null)
             {
                 return new NotFoundResult();

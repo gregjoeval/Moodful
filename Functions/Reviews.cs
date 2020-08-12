@@ -35,9 +35,8 @@ namespace Moodful.Functions
             return userId;
         }
 
-        private static Dictionary<Guid, Review> GetReviewsByUserIdFromHttpRequest(HttpRequest httpRequest)
+        private static Dictionary<Guid, Review> GetReviewsByUserId(string userId)
         {
-            var userId = GetUserIdFromHttpRequest(httpRequest);
             if (ReviewCollection.TryGetValue(userId, out var reviews))
             {
                 return reviews;
@@ -46,9 +45,8 @@ namespace Moodful.Functions
             return null;
         }
 
-        private static Dictionary<Guid, Review> UpsertReviewsByUserIdFromHttpRequest(HttpRequest httpRequest, IEnumerable<Review> reviews)
+        private static Dictionary<Guid, Review> UpsertReviewsByUserId(string userId, IEnumerable<Review> reviews)
         {
-            var userId = GetUserIdFromHttpRequest(httpRequest);
             ReviewCollection.TryGetValue(userId, out var existingModels);
 
             foreach(var model in reviews)
@@ -64,8 +62,9 @@ namespace Moodful.Functions
                     {
                         var existingReview = existingModels[model.Id];
 
-                        existingReview.LastEdited = DateTimeOffset.UtcNow;
+                        existingReview.LastModified = DateTimeOffset.UtcNow;
                         existingReview.Rating = model.Rating;
+                        existingReview.Secret = model.Secret;
                         existingReview.Tags = model.Tags;
                         existingReview.Description = model.Description;
 
@@ -92,7 +91,8 @@ namespace Moodful.Functions
                 return new UnauthorizedResult();
             }
 
-            var reviews = GetReviewsByUserIdFromHttpRequest(httpRequest);
+            var userId = GetUserIdFromHttpRequest(httpRequest);
+            var reviews = GetReviewsByUserId(userId);
             if (reviews == null)
             {
                 return new NotFoundResult();
@@ -118,7 +118,8 @@ namespace Moodful.Functions
                 return new UnauthorizedResult();
             }
 
-            var reviews = GetReviewsByUserIdFromHttpRequest(httpRequest);
+            var userId = GetUserIdFromHttpRequest(httpRequest);
+            var reviews = GetReviewsByUserId(userId);
             if (reviews == null)
             {
                 return new NotFoundResult();
@@ -153,13 +154,14 @@ namespace Moodful.Functions
             string requestBody = await new StreamReader(httpRequest.Body).ReadToEndAsync();
             var model = JsonConvert.DeserializeObject<Review>(requestBody);
 
-            var reviews = GetReviewsByUserIdFromHttpRequest(httpRequest);            
+            var userId = GetUserIdFromHttpRequest(httpRequest);
+            var reviews = GetReviewsByUserId(userId);            
             if (reviews != null && reviews.ContainsKey(model.Id))
             {
                 return new ConflictResult();
             }
 
-            UpsertReviewsByUserIdFromHttpRequest(httpRequest, new[] { model });
+            UpsertReviewsByUserId(userId, new[] { model });
             return new OkObjectResult(model);
         }
 
@@ -180,7 +182,8 @@ namespace Moodful.Functions
                 return new UnauthorizedResult();
             }
 
-            var reviews = GetReviewsByUserIdFromHttpRequest(httpRequest);
+            var userId = GetUserIdFromHttpRequest(httpRequest);
+            var reviews = GetReviewsByUserId(userId);
             if (reviews == null)
             {
                 return new NotFoundResult();
@@ -193,7 +196,7 @@ namespace Moodful.Functions
                 return new NotFoundResult();
             }
 
-            UpsertReviewsByUserIdFromHttpRequest(httpRequest, new[] { model });
+            UpsertReviewsByUserId(userId, new[] { model });
 
             return new OkObjectResult(model);
         }
@@ -215,7 +218,8 @@ namespace Moodful.Functions
                 return new UnauthorizedResult();
             }
 
-            var reviews = GetReviewsByUserIdFromHttpRequest(httpRequest);
+            var userId = GetUserIdFromHttpRequest(httpRequest);
+            var reviews = GetReviewsByUserId(userId);
             if (reviews == null)
             {
                 return new NotFoundResult();
