@@ -37,4 +37,5 @@ jobs:
     - run: npm publish --access public
       working-directory: ${{ env.CLIENT_PACKAGE_FOLDER }}
       env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
