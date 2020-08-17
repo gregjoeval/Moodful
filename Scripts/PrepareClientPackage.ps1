@@ -35,7 +35,7 @@ $packageJsonFile = ("{0}/package.json" -f $workingDirectory)
 $packageJsonData = Get-Content $packageJsonFile -raw | ConvertFrom-Json
 
 # parse client name from package name
-$clientName = $packageJsonData.name -replace '.*@dealerpolicy/'
+$clientName = $packageJsonData.name -replace '.*@gjv/'
 Write-Host $clientName
 
 # add devDependency
