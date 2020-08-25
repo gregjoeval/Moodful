@@ -65,7 +65,7 @@ namespace Moodful.Functions
                         existingReview.LastModified = DateTimeOffset.UtcNow;
                         existingReview.Rating = model.Rating;
                         existingReview.Secret = model.Secret;
-                        existingReview.Tags = model.Tags;
+                        existingReview.TagIds = model.TagIds;
                         existingReview.Description = model.Description;
 
                         existingModels[model.Id] = existingReview;

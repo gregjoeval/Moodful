@@ -23,6 +23,6 @@ namespace Moodful.Models
 
         public string Description { get; set; }
 
-        public IEnumerable<Tag> Tags { get; set; }
+        public IEnumerable<Guid> TagIds { get; set; }
     }
 }
