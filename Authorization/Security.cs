@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
@@ -16,16 +17,22 @@ namespace Moodful.Authorization
     /// </summary>
     public class Security
     {
-        private readonly static IConfigurationManager<OpenIdConnectConfiguration> _configurationManager;
+        private ILogger Logger;
+        private readonly IConfigurationManager<OpenIdConnectConfiguration> ConfigurationManager;
 
         private readonly static string Issuer = Environment.GetEnvironmentVariable("JWT-TOKEN-ISSUER");
         private readonly static string Audience = Environment.GetEnvironmentVariable("JWT-TOKEN-AUDIENCE");
 
-        static Security()
+        public Security(ILogger log)
         {
+            Logger = log;
+            Logger.LogDebug($"{nameof(Issuer)}: {Issuer}");
+            Logger.LogDebug($"{nameof(Audience)}: {Audience}");
+            
+
             var documentRetriever = new HttpDocumentRetriever { RequireHttps = Issuer.StartsWith("https://") };
 
-            _configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+            ConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
                 $"{Issuer}.well-known/openid-configuration",
                 new OpenIdConnectConfigurationRetriever(),
                 documentRetriever
@@ -54,7 +61,7 @@ namespace Moodful.Authorization
             if (value?.Scheme != "Bearer")
                 return null;
 
-            var config = await _configurationManager.GetConfigurationAsync(CancellationToken.None);
+            var config = await ConfigurationManager.GetConfigurationAsync(CancellationToken.None);
 
             var validationParameter = new TokenValidationParameters
             {
@@ -81,14 +88,18 @@ namespace Moodful.Authorization
                 }
                 catch (SecurityTokenSignatureKeyNotFoundException ex1)
                 {
+                    Logger.LogWarning($"{nameof(SecurityTokenSignatureKeyNotFoundException)}: {ex1.Message}");
+
                     // This exception is thrown if the signature key of the JWT could not be found.
                     // This could be the case when the issuer changed its signing keys, so we trigger a 
                     // refresh and retry validation.
-                    _configurationManager.RequestRefresh();
+                    ConfigurationManager.RequestRefresh();
                     tries++;
                 }
                 catch (SecurityTokenException ex2)
                 {
+                    Logger.LogWarning($"{nameof(SecurityTokenException)}: {ex2.Message}");
+
                     return null;
                 }
             }

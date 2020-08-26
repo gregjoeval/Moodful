@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Moodful.Authorization;
 using Moodful.Models;
@@ -23,9 +24,9 @@ namespace Moodful.Functions
         private static readonly Dictionary<string, Dictionary<Guid, Tag>> TagCollection = new Dictionary<string, Dictionary<Guid, Tag>>();
         private const string BasePath = "tags";
 
-        public Tags()
+        public Tags(ILogger log)
         {
-            _security = new Security();
+            _security = new Security(log);
         }
 
         private static string GetUserIdFromHttpRequest(HttpRequest httpRequest)
