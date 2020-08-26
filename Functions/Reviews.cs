@@ -29,9 +29,9 @@ namespace Moodful.Functions
             _security = new Security(log);
         }
 
-        private static string GetUserIdFromHttpRequest(HttpRequest httpRequest)
+        private string GetUserIdFromHttpRequest(HttpRequest httpRequest)
         {
-            var token = Security.GetJWTSecurityTokenFromHttpRequestAsync(httpRequest);
+            var token = _security.GetJWTSecurityTokenFromHttpRequestAsync(httpRequest);
             var userId = token.Subject;
             return userId;
         }

@@ -17,35 +17,36 @@ namespace Moodful.Authorization
     /// </summary>
     public class Security
     {
-        private ILogger Logger;
-        private readonly IConfigurationManager<OpenIdConnectConfiguration> ConfigurationManager;
+        private ILogger _logger;
+        private readonly IConfigurationManager<OpenIdConnectConfiguration> _configurationManager;
 
         private readonly static string Issuer = Environment.GetEnvironmentVariable("JWT-TOKEN-ISSUER");
         private readonly static string Audience = Environment.GetEnvironmentVariable("JWT-TOKEN-AUDIENCE");
 
         public Security(ILogger log)
         {
-            Logger = log;
-            Logger.LogDebug($"{nameof(Issuer)}: {Issuer}");
-            Logger.LogDebug($"{nameof(Audience)}: {Audience}");
-            
+            _logger = log;
 
             var documentRetriever = new HttpDocumentRetriever { RequireHttps = Issuer.StartsWith("https://") };
 
-            ConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+            _configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
                 $"{Issuer}.well-known/openid-configuration",
                 new OpenIdConnectConfigurationRetriever(),
                 documentRetriever
             );
         }
 
-        private static AuthenticationHeaderValue ParseAuthenticationHeaderFromHttpRequest(HttpRequest httpRequest)
+        private AuthenticationHeaderValue ParseAuthenticationHeaderFromHttpRequest(HttpRequest httpRequest)
         {
             var hasAuthorizationHeader = httpRequest.Headers.TryGetValue("Authorization", out var authorizationValue);
+      
+            _logger.LogDebug($"hasAuthorizationHeader:{hasAuthorizationHeader}");
 
             if (hasAuthorizationHeader)
             {
                 var hasValidAuthenticationHeader = AuthenticationHeaderValue.TryParse(authorizationValue, out var authenticationHeader);
+
+                _logger.LogDebug($"hasAuthorizationHeader:{hasAuthorizationHeader}");
 
                 if (hasValidAuthenticationHeader)
                 {
@@ -61,7 +62,10 @@ namespace Moodful.Authorization
             if (value?.Scheme != "Bearer")
                 return null;
 
-            var config = await ConfigurationManager.GetConfigurationAsync(CancellationToken.None);
+            var config = await _configurationManager.GetConfigurationAsync(CancellationToken.None);
+
+            _logger.LogDebug($"{nameof(Issuer)}: {Issuer}");
+            _logger.LogDebug($"{nameof(Audience)}: {Audience}");
 
             var validationParameter = new TokenValidationParameters
             {
@@ -88,17 +92,17 @@ namespace Moodful.Authorization
                 }
                 catch (SecurityTokenSignatureKeyNotFoundException ex1)
                 {
-                    Logger.LogWarning($"{nameof(SecurityTokenSignatureKeyNotFoundException)}: {ex1.Message}");
+                    _logger.LogWarning($"{nameof(SecurityTokenSignatureKeyNotFoundException)}: {ex1.Message}");
 
                     // This exception is thrown if the signature key of the JWT could not be found.
                     // This could be the case when the issuer changed its signing keys, so we trigger a 
                     // refresh and retry validation.
-                    ConfigurationManager.RequestRefresh();
+                    _configurationManager.RequestRefresh();
                     tries++;
                 }
                 catch (SecurityTokenException ex2)
                 {
-                    Logger.LogWarning($"{nameof(SecurityTokenException)}: {ex2.Message}");
+                    _logger.LogWarning($"{nameof(SecurityTokenException)}: {ex2.Message}");
 
                     return null;
                 }
@@ -120,7 +124,7 @@ namespace Moodful.Authorization
             return null;
         }
 
-        public static JwtSecurityToken GetJWTSecurityTokenFromHttpRequestAsync(HttpRequest httpRequest)
+        public JwtSecurityToken GetJWTSecurityTokenFromHttpRequestAsync(HttpRequest httpRequest)
         {
             var authenticationHeader = ParseAuthenticationHeaderFromHttpRequest(httpRequest);
 
