@@ -24,9 +24,8 @@ namespace Moodful.Functions
         private static readonly Dictionary<string, Dictionary<Guid, Tag>> TagCollection = new Dictionary<string, Dictionary<Guid, Tag>>();
         private const string BasePath = "tags";
 
-        public Tags(ILogger log)
+        public Tags()
         {
-            _security = new Security(log);
         }
 
         private string GetUserIdFromHttpRequest(HttpRequest httpRequest)
@@ -82,8 +81,11 @@ namespace Moodful.Functions
         [OpenApiOperation(nameof(GetTags), nameof(Tags))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(List<Tag>))]
         public async Task<IActionResult> GetTags(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest)
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest,
+            ILogger logger)
         {
+            _security = new Security(logger);
+
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
@@ -109,8 +111,11 @@ namespace Moodful.Functions
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> GetTagsById(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath + "/{id}")] HttpRequest httpRequest,
-            Guid id)
+            Guid id,
+            ILogger logger)
         {
+            _security = new Security(logger);
+
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
@@ -142,8 +147,11 @@ namespace Moodful.Functions
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.Conflict, "application/json", typeof(JObject))]
         public async Task<IActionResult> PostTags(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = BasePath)] HttpRequest httpRequest)
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = BasePath)] HttpRequest httpRequest,
+            ILogger logger)
         {
+            _security = new Security(logger);
+
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
@@ -173,8 +181,11 @@ namespace Moodful.Functions
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> UpdateTags(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = BasePath)] HttpRequest httpRequest)
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = BasePath)] HttpRequest httpRequest,
+            ILogger logger)
         {
+            _security = new Security(logger);
+
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
@@ -209,8 +220,11 @@ namespace Moodful.Functions
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> DeleteTags(
             [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Delete), Route = BasePath + "/{id}")] HttpRequest httpRequest,
-            Guid id)
+            Guid id,
+            ILogger logger)
         {
+            _security = new Security(logger);
+
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {

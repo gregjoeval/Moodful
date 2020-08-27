@@ -24,9 +24,8 @@ namespace Moodful.Functions
         private static readonly Dictionary<string, Dictionary<Guid, Review>> ReviewCollection = new Dictionary<string, Dictionary<Guid, Review>>();
         private const string BasePath = "reviews";
 
-        public Reviews(ILogger log)
+        public Reviews()
         {
-            _security = new Security(log);
         }
 
         private string GetUserIdFromHttpRequest(HttpRequest httpRequest)
@@ -84,8 +83,11 @@ namespace Moodful.Functions
         [OpenApiOperation(nameof(GetReviews), nameof(Reviews))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(List<Review>))]
         public async Task<IActionResult> GetReviews(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest)
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest,
+            ILogger logger)
         {
+            _security = new Security(logger);
+
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
@@ -111,8 +113,11 @@ namespace Moodful.Functions
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> GetReviewsById(
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath + "/{id}")] HttpRequest httpRequest,
-            Guid id)
+            Guid id,
+            ILogger logger)
         {
+            _security = new Security(logger);
+
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
@@ -144,8 +149,11 @@ namespace Moodful.Functions
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Review))]
         [OpenApiResponseBody(HttpStatusCode.Conflict, "application/json", typeof(JObject))]
         public async Task<IActionResult> PostReviews(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = BasePath)] HttpRequest httpRequest)
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = BasePath)] HttpRequest httpRequest,
+            ILogger logger)
         {
+            _security = new Security(logger);
+
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
@@ -175,8 +183,11 @@ namespace Moodful.Functions
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Review))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> UpdateReviews(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = BasePath)] HttpRequest httpRequest)
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = BasePath)] HttpRequest httpRequest,
+            ILogger logger)
         {
+            _security = new Security(logger);
+
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
@@ -211,8 +222,11 @@ namespace Moodful.Functions
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> DeleteReviews(
             [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Delete), Route = BasePath + "/{id}")] HttpRequest httpRequest,
-            Guid id)
+            Guid id,
+            ILogger logger)
         {
+            _security = new Security(logger);
+
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
