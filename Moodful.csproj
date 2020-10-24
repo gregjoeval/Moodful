@@ -3,6 +3,7 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <AzureFunctionsVersion>v2</AzureFunctionsVersion>
     <UserSecretsId>8a939cef-086b-4d93-879f-de38b99c4bec</UserSecretsId>
+    <_FunctionsSkipCleanOutput>true</_FunctionsSkipCleanOutput>
   </PropertyGroup>
   <ItemGroup>
     <None Include="Scripts\BumpNpmPackageVersion.ps1" />
