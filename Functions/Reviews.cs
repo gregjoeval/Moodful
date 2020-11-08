@@ -101,7 +101,7 @@ namespace Moodful.Functions
                 return new NotFoundResult();
             }
 
-            return new OkObjectResult(reviews.ToList());
+            return new OkObjectResult(reviews.ToList().Select(o => o.Value));
         }
 
         [FunctionName(nameof(Reviews) + nameof(GetReviewsById))]

@@ -27,10 +27,13 @@ namespace Moodful.Authorization
         {
             _logger = log;
 
+            _logger.LogDebug($"{nameof(Issuer)}: {Issuer}");
+            _logger.LogDebug($"{nameof(Audience)}: {Audience}");
+
             var documentRetriever = new HttpDocumentRetriever { RequireHttps = Issuer.StartsWith("https://") };
 
             _configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
-                $"{Issuer}/.well-known/openid-configuration",
+                $"{Issuer}.well-known/openid-configuration",
                 new OpenIdConnectConfigurationRetriever(),
                 documentRetriever
             );
@@ -46,7 +49,7 @@ namespace Moodful.Authorization
             {
                 var hasValidAuthenticationHeader = AuthenticationHeaderValue.TryParse(authorizationValue, out var authenticationHeader);
 
-                _logger.LogDebug($"hasAuthorizationHeader:{hasAuthorizationHeader}");
+                _logger.LogDebug($"hasValidAuthenticationHeader:{hasAuthorizationHeader}");
 
                 if (hasValidAuthenticationHeader)
                 {
@@ -61,9 +64,6 @@ namespace Moodful.Authorization
         {
             if (value?.Scheme != "Bearer")
                 return null;
-
-            _logger.LogDebug($"{nameof(Issuer)}: {Issuer}");
-            _logger.LogDebug($"{nameof(Audience)}: {Audience}");
 
             var config = await _configurationManager.GetConfigurationAsync(CancellationToken.None);
 
