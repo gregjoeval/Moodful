@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Moodful.Authorization;
+using Moodful.Configuration;
 using Moodful.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -20,12 +22,17 @@ namespace Moodful.Functions
 {
     public class Reviews
     {
-        private Security _security;
-        private static readonly Dictionary<string, Dictionary<Guid, Review>> ReviewCollection = new Dictionary<string, Dictionary<Guid, Review>>();
         private const string BasePath = "reviews";
 
-        public Reviews()
+        private Security _security;
+
+        private readonly AuthenticationOptions AuthenticationOptions;
+
+        private static readonly Dictionary<string, Dictionary<Guid, Review>> ReviewCollection = new Dictionary<string, Dictionary<Guid, Review>>();
+
+        public Reviews(IOptions<AuthenticationOptions> authenticationOptions)
         {
+            AuthenticationOptions = authenticationOptions.Value;
         }
 
         private string GetUserIdFromHttpRequest(HttpRequest httpRequest)
@@ -86,7 +93,7 @@ namespace Moodful.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest,
             ILogger logger)
         {
-            _security = new Security(logger);
+            _security = new Security(logger, AuthenticationOptions);
 
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
@@ -116,7 +123,7 @@ namespace Moodful.Functions
             Guid id,
             ILogger logger)
         {
-            _security = new Security(logger);
+            _security = new Security(logger, AuthenticationOptions);
 
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
@@ -152,7 +159,7 @@ namespace Moodful.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = BasePath)] HttpRequest httpRequest,
             ILogger logger)
         {
-            _security = new Security(logger);
+            _security = new Security(logger, AuthenticationOptions);
 
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
@@ -186,7 +193,7 @@ namespace Moodful.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = BasePath)] HttpRequest httpRequest,
             ILogger logger)
         {
-            _security = new Security(logger);
+            _security = new Security(logger, AuthenticationOptions);
 
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
@@ -225,7 +232,7 @@ namespace Moodful.Functions
             Guid id,
             ILogger logger)
         {
-            _security = new Security(logger);
+            _security = new Security(logger, AuthenticationOptions);
 
             var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)

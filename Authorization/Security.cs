@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
-using System;
+using Moodful.Configuration;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -17,25 +17,20 @@ namespace Moodful.Authorization
     /// </summary>
     public class Security
     {
-        private ILogger _logger;
+        private readonly ILogger _logger;
         private readonly IConfigurationManager<OpenIdConnectConfiguration> _configurationManager;
+        private readonly AuthenticationOptions AuthenticationOptions;
 
-        private readonly static string Issuer = Environment.GetEnvironmentVariable("JWT-TOKEN-ISSUER");
-        private readonly static string Audience = Environment.GetEnvironmentVariable("JWT-TOKEN-AUDIENCE");
-
-        public Security(ILogger log)
+        public Security(ILogger log, AuthenticationOptions authenticationOptions)
         {
+            AuthenticationOptions = authenticationOptions;
+
             _logger = log;
 
-            _logger.LogDebug($"{nameof(Issuer)}: {Issuer}");
-            _logger.LogDebug($"{nameof(Audience)}: {Audience}");
-
-            var documentRetriever = new HttpDocumentRetriever { RequireHttps = Issuer.StartsWith("https://") };
-
             _configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
-                $"{Issuer}.well-known/openid-configuration",
+                $"{AuthenticationOptions.Issuer}/.well-known/openid-configuration",
                 new OpenIdConnectConfigurationRetriever(),
-                documentRetriever
+                new HttpDocumentRetriever { RequireHttps = AuthenticationOptions.Issuer.StartsWith("https://") }
             );
         }
 
@@ -70,9 +65,9 @@ namespace Moodful.Authorization
             var validationParameter = new TokenValidationParameters
             {
                 RequireSignedTokens = true,
-                ValidAudience = Audience,
+                ValidAudience = AuthenticationOptions.Audience,
                 ValidateAudience = true,
-                ValidIssuer = Issuer,
+                ValidIssuer = $"{AuthenticationOptions.Issuer}/", // Auth0's issuer has a '/' on the end of its url
                 ValidateIssuer = true,
                 ValidateIssuerSigningKey = true,
                 ValidateLifetime = true,
