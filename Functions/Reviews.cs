@@ -22,12 +22,9 @@ namespace Moodful.Functions
 {
     public class Reviews
     {
-        private const string BasePath = "reviews";
-
-        private Security _security;
-
+        private const string BasePath = nameof(Reviews);
+        private Security Security;
         private readonly AuthenticationOptions AuthenticationOptions;
-
         private static readonly Dictionary<string, Dictionary<Guid, Review>> ReviewCollection = new Dictionary<string, Dictionary<Guid, Review>>();
 
         public Reviews(IOptions<AuthenticationOptions> authenticationOptions)
@@ -37,7 +34,7 @@ namespace Moodful.Functions
 
         private string GetUserIdFromHttpRequest(HttpRequest httpRequest)
         {
-            var token = _security.GetJWTSecurityTokenFromHttpRequestAsync(httpRequest);
+            var token = Security.GetJWTSecurityTokenFromHttpRequestAsync(httpRequest);
             var userId = token.Subject;
             return userId;
         }
@@ -93,9 +90,9 @@ namespace Moodful.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest,
             ILogger logger)
         {
-            _security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, AuthenticationOptions);
 
-            var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
+            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
                 return new UnauthorizedResult();
@@ -123,9 +120,9 @@ namespace Moodful.Functions
             Guid id,
             ILogger logger)
         {
-            _security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, AuthenticationOptions);
 
-            var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
+            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
                 return new UnauthorizedResult();
@@ -159,9 +156,9 @@ namespace Moodful.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = BasePath)] HttpRequest httpRequest,
             ILogger logger)
         {
-            _security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, AuthenticationOptions);
 
-            var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
+            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
                 return new UnauthorizedResult();
@@ -193,9 +190,9 @@ namespace Moodful.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = BasePath)] HttpRequest httpRequest,
             ILogger logger)
         {
-            _security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, AuthenticationOptions);
 
-            var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
+            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
                 return new UnauthorizedResult();
@@ -232,9 +229,9 @@ namespace Moodful.Functions
             Guid id,
             ILogger logger)
         {
-            _security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, AuthenticationOptions);
 
-            var claimsPrincipal = await _security.AuthenticateHttpRequestAsync(httpRequest);
+            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
             if (claimsPrincipal == null)
             {
                 return new UnauthorizedResult();

@@ -17,17 +17,18 @@ namespace Moodful.Authorization
     /// </summary>
     public class Security
     {
-        private readonly ILogger _logger;
-        private readonly IConfigurationManager<OpenIdConnectConfiguration> _configurationManager;
+        private readonly ILogger Logger;
+        private readonly IConfigurationManager<OpenIdConnectConfiguration> ConfigurationManager;
         private readonly AuthenticationOptions AuthenticationOptions;
 
+        // TODO: need figure out how to inject ILogger
         public Security(ILogger log, AuthenticationOptions authenticationOptions)
         {
             AuthenticationOptions = authenticationOptions;
 
-            _logger = log;
+            Logger = log;
 
-            _configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+            ConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
                 $"{AuthenticationOptions.Issuer}/.well-known/openid-configuration",
                 new OpenIdConnectConfigurationRetriever(),
                 new HttpDocumentRetriever { RequireHttps = AuthenticationOptions.Issuer.StartsWith("https://") }
@@ -38,13 +39,13 @@ namespace Moodful.Authorization
         {
             var hasAuthorizationHeader = httpRequest.Headers.TryGetValue("Authorization", out var authorizationValue);
       
-            _logger.LogDebug($"hasAuthorizationHeader:{hasAuthorizationHeader}");
+            Logger.LogDebug($"hasAuthorizationHeader:{hasAuthorizationHeader}");
 
             if (hasAuthorizationHeader)
             {
                 var hasValidAuthenticationHeader = AuthenticationHeaderValue.TryParse(authorizationValue, out var authenticationHeader);
 
-                _logger.LogDebug($"hasValidAuthenticationHeader:{hasAuthorizationHeader}");
+                Logger.LogDebug($"hasValidAuthenticationHeader:{hasAuthorizationHeader}");
 
                 if (hasValidAuthenticationHeader)
                 {
@@ -60,7 +61,7 @@ namespace Moodful.Authorization
             if (value?.Scheme != "Bearer")
                 return null;
 
-            var config = await _configurationManager.GetConfigurationAsync(CancellationToken.None);
+            var config = await ConfigurationManager.GetConfigurationAsync(CancellationToken.None);
 
             var validationParameter = new TokenValidationParameters
             {
@@ -87,17 +88,17 @@ namespace Moodful.Authorization
                 }
                 catch (SecurityTokenSignatureKeyNotFoundException ex1)
                 {
-                    _logger.LogWarning($"{nameof(SecurityTokenSignatureKeyNotFoundException)}: {ex1.Message}");
+                    Logger.LogWarning($"{nameof(SecurityTokenSignatureKeyNotFoundException)}: {ex1.Message}");
 
                     // This exception is thrown if the signature key of the JWT could not be found.
                     // This could be the case when the issuer changed its signing keys, so we trigger a 
                     // refresh and retry validation.
-                    _configurationManager.RequestRefresh();
+                    ConfigurationManager.RequestRefresh();
                     tries++;
                 }
                 catch (SecurityTokenException ex2)
                 {
-                    _logger.LogWarning($"{nameof(SecurityTokenException)}: {ex2.Message}");
+                    Logger.LogWarning($"{nameof(SecurityTokenException)}: {ex2.Message}");
 
                     return null;
                 }
