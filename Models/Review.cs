@@ -4,18 +4,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Moodful.Models
 {
-    public class Review
+    public class Review : Identifiable, IModifiable
     {
-        [Key]
-        public Guid Id { get; set; } = Guid.NewGuid();
-
-        // TODO: put this on db model
-        //public Guid UserId { get; set; }
-
-        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
-
-        public DateTimeOffset? LastModified { get; set; } = null;
-
         public bool Secret { get; set; }
 
         [Required]
@@ -24,5 +14,9 @@ namespace Moodful.Models
         public string Description { get; set; }
 
         public IEnumerable<Guid> TagIds { get; set; }
+
+        public DateTimeOffset CreatedAt { get; set; }
+
+        public DateTimeOffset? LastModified { get; set; }
     }
 }

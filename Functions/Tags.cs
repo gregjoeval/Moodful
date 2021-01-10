@@ -6,17 +6,20 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
-using Moodful.Authorization;
+using Moodful.Services.Security;
 using Moodful.Configuration;
 using Moodful.Models;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Moodful.Services.Storage;
+using Moodful.Services.Storage.TableEntities;
+using AutoMapper;
+using Microsoft.Azure.Cosmos.Table;
+using Moodful.Extensions;
 
 namespace Moodful.Functions
 {
@@ -24,116 +27,71 @@ namespace Moodful.Functions
     {
         private const string BasePath = nameof(Tags);
         private Security Security;
-        private readonly AuthenticationOptions AuthenticationOptions;
-        private static readonly Dictionary<string, Dictionary<Guid, Tag>> TagCollection = new Dictionary<string, Dictionary<Guid, Tag>>();
+        private readonly SecurityOptions SecurityOptions;
+        private StorageService<TagTableEntity, Tag> StorageService;
 
-        public Tags(IOptions<AuthenticationOptions> authenticationOptions)
+        public Tags(IOptions<SecurityOptions> securityOptions, IMapper mapper)
         {
-            AuthenticationOptions = authenticationOptions.Value;
-        }
-
-        private string GetUserIdFromHttpRequest(HttpRequest httpRequest)
-        {
-            var token = Security.GetJWTSecurityTokenFromHttpRequestAsync(httpRequest);
-            var userId = token.Subject;
-            return userId;
-        }
-
-        private static Dictionary<Guid, Tag> GetTagsByUserId(string userId)
-        {
-            if (TagCollection.TryGetValue(userId, out var tags))
-            {
-                return tags;
-            }
-
-            return null;
-        }
-
-        private static Dictionary<Guid, Tag> UpsertTagsByUserId(string userId, IEnumerable<Tag> tags)
-        {
-            TagCollection.TryGetValue(userId, out var existingModels);
-
-            foreach (var model in tags)
-            {
-                if (existingModels == null)
-                {
-                    existingModels = tags.ToDictionary(o => o.Id);
-                }
-                else
-                {
-                    var wasAdded = existingModels.TryAdd(model.Id, model);
-                    if (wasAdded == false)
-                    {
-                        var existingTag = existingModels[model.Id];
-
-                        existingTag.LastModified = DateTimeOffset.UtcNow;
-                        existingTag.Title = model.Title;
-                        existingTag.Color = model.Color;
-
-                        existingModels[model.Id] = existingTag;
-                    }
-                }
-            }
-
-            TagCollection[userId] = existingModels;
-
-            return existingModels;
+            SecurityOptions = securityOptions.Value;
+            StorageService = new StorageService<TagTableEntity, Tag>(mapper);
         }
 
         [FunctionName(nameof(Tags) + nameof(GetTags))]
-        [ProducesResponseType(typeof(List<Tag>), 200)]
+        [ProducesResponseType(typeof(IEnumerable<Tag>), 200)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(404)]
         [OpenApiOperation(nameof(GetTags), nameof(Tags))]
-        [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(List<Tag>))]
+        [OpenApiParameter("userId", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
+        [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(IEnumerable<Tag>))]
+        [OpenApiResponseBody(HttpStatusCode.Unauthorized, "application/json", typeof(JObject))]
+        [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> GetTags(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest,
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = "{userId}/" + BasePath)] HttpRequest httpRequest,
+            [Table(TableNames.Tag)] CloudTable cloudTable,
+            string userId,
             ILogger logger)
         {
-            Security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, SecurityOptions);
 
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
-            if (claimsPrincipal == null)
+            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
 
-            var userId = GetUserIdFromHttpRequest(httpRequest);
-            var tags = GetTagsByUserId(userId);
-            if (tags == null)
+            var models = StorageService.Retrieve(cloudTable, userId);
+            if (models.Count() == 0)
             {
                 return new NotFoundResult();
             }
 
-            return new OkObjectResult(tags.ToList());
+            return new OkObjectResult(models);
         }
 
         [FunctionName(nameof(Tags) + nameof(GetTagsById))]
         [ProducesResponseType(typeof(Tag), 200)]
+        [ProducesResponseType(401)]
         [ProducesResponseType(404)]
         [OpenApiOperation(nameof(GetTagsById), nameof(Tags))]
+        [OpenApiParameter("userId", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
         [OpenApiParameter("id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Tag))]
+        [OpenApiResponseBody(HttpStatusCode.Unauthorized, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> GetTagsById(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath + "/{id}")] HttpRequest httpRequest,
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = "{userId}/" + BasePath + "/{id}")] HttpRequest httpRequest,
+            [Table(TableNames.Tag)] CloudTable cloudTable,
+            string userId,
             Guid id,
             ILogger logger)
         {
-            Security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, SecurityOptions);
 
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
-            if (claimsPrincipal == null)
+            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
 
-            var userId = GetUserIdFromHttpRequest(httpRequest);
-            var reviews = GetTagsByUserId(userId);
-            if (reviews == null)
-            {
-                return new NotFoundResult();
-            }
-
-            var model = reviews.FirstOrDefault(o => o.Key == id).Value;
+            var model = StorageService.RetrieveById(cloudTable, userId, id.ToString());
             if (model == null)
             {
                 return new NotFoundResult();
@@ -144,111 +102,142 @@ namespace Moodful.Functions
 
         [FunctionName(nameof(Tags) + nameof(PostTags))]
         [ProducesResponseType(typeof(Tag), 200)]
-        [ProducesResponseType(400)]
+        [ProducesResponseType(typeof(IEnumerable<ValidationResponse>), 400)]
+        [ProducesResponseType(401)]
         [ProducesResponseType(409)]
         [OpenApiOperation(nameof(PostTags), nameof(Tags))]
+        [OpenApiParameter("userId", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
         [OpenApiRequestBody("application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Tag))]
+        [OpenApiResponseBody(HttpStatusCode.BadRequest, "application/json", typeof(IEnumerable<ValidationResponse>))]
+        [OpenApiResponseBody(HttpStatusCode.Unauthorized, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.Conflict, "application/json", typeof(JObject))]
         public async Task<IActionResult> PostTags(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = BasePath)] HttpRequest httpRequest,
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = "{userId}/" + BasePath)] HttpRequest httpRequest,
+            [Table(TableNames.Tag)] CloudTable cloudTable,
+            string userId,
             ILogger logger)
         {
-            Security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, SecurityOptions);
 
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
-            if (claimsPrincipal == null)
+            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
 
-            string requestBody = await new StreamReader(httpRequest.Body).ReadToEndAsync();
-            var model = JsonConvert.DeserializeObject<Tag>(requestBody);
-
-            var userId = GetUserIdFromHttpRequest(httpRequest);
-            var reviews = GetTagsByUserId(userId);
-            if (reviews != null && reviews.ContainsKey(model.Id))
+            try
             {
-                return new ConflictResult();
-            }
+                var result = await httpRequest.GetValidatedJsonBody<Tag, TagValidator>();
 
-            UpsertTagsByUserId(userId, new[] { model });
-            return new OkObjectResult(model);
+                if (!result.IsValid)
+                {
+                    return result.ToBadRequest();
+                }
+
+                var model = StorageService.Create(cloudTable, userId, result.Value);
+
+                return new OkObjectResult(model);
+            }
+            catch (StorageException ex)
+            {
+                if (ex.RequestInformation.HttpStatusCode == 409)
+                {
+                    return new ConflictResult();
+                }
+
+                return new BadRequestResult(); // TODO: lets default to bad request for now but will probably need to change this
+            }
         }
 
         [FunctionName(nameof(Tags) + nameof(UpdateTags))]
         [ProducesResponseType(typeof(Tag), 200)]
-        [ProducesResponseType(400)]
+        [ProducesResponseType(typeof(IEnumerable<ValidationResponse>), 400)]
+        [ProducesResponseType(401)]
         [ProducesResponseType(404)]
         [OpenApiOperation(nameof(UpdateTags), nameof(Tags))]
+        [OpenApiParameter("userId", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
         [OpenApiRequestBody("application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Tag))]
+        [OpenApiResponseBody(HttpStatusCode.BadRequest, "application/json", typeof(IEnumerable<ValidationResponse>))]
+        [OpenApiResponseBody(HttpStatusCode.Unauthorized, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> UpdateTags(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = BasePath)] HttpRequest httpRequest,
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = "{userId}/" + BasePath)] HttpRequest httpRequest,
+            [Table(TableNames.Tag)] CloudTable cloudTable,
+            string userId,
             ILogger logger)
         {
-            Security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, SecurityOptions);
 
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
-            if (claimsPrincipal == null)
+            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
 
-            var userId = GetUserIdFromHttpRequest(httpRequest);
-            var reviews = GetTagsByUserId(userId);
-            if (reviews == null)
+            try
             {
-                return new NotFoundResult();
-            }
+                var result = await httpRequest.GetValidatedJsonBody<Tag, TagValidator>();
 
-            string requestBody = await new StreamReader(httpRequest.Body).ReadToEndAsync();
-            var model = JsonConvert.DeserializeObject<Tag>(requestBody);
-            if (reviews?.FirstOrDefault(o => o.Key == model.Id) == null)
+                if (!result.IsValid)
+                {
+                    return result.ToBadRequest();
+                }
+
+                var model = StorageService.Update(cloudTable, userId, result.Value);
+
+                return new OkObjectResult(model);
+            }
+            catch (StorageException ex)
             {
-                return new NotFoundResult();
+                if (ex.RequestInformation.HttpStatusCode == 404)
+                {
+                    return new NotFoundResult();
+                }
+
+                return new BadRequestResult(); // TODO: lets default to bad request for now but will probably need to change this
             }
-
-            UpsertTagsByUserId(userId, new[] { model });
-
-            return new OkObjectResult(model);
         }
 
         [FunctionName(nameof(Tags) + nameof(DeleteTags))]
-        [ProducesResponseType(typeof(Tag), 200)]
-        [ProducesResponseType(typeof(Tag), 404)]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(404)]
         [OpenApiOperation(nameof(DeleteTags), nameof(Tags))]
+        [OpenApiParameter("userId", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
         [OpenApiParameter("id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(JObject))]
+        [OpenApiResponseBody(HttpStatusCode.BadRequest, "application/json", typeof(JObject))]
+        [OpenApiResponseBody(HttpStatusCode.Unauthorized, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> DeleteTags(
-            [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Delete), Route = BasePath + "/{id}")] HttpRequest httpRequest,
+            [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Delete), Route = "{userId}/" + BasePath + "/{id}")] HttpRequest httpRequest,
+            [Table(TableNames.Tag)] CloudTable cloudTable,
+            string userId,
             Guid id,
             ILogger logger)
         {
-            Security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, SecurityOptions);
 
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
-            if (claimsPrincipal == null)
+            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
 
-            var userId = GetUserIdFromHttpRequest(httpRequest);
-            var reviews = GetTagsByUserId(userId);
-            if (reviews == null)
+            try
             {
-                return new NotFoundResult();
+                var model = StorageService.Delete(cloudTable, userId, id.ToString());
+                return new OkResult();
             }
-
-            var removed = reviews.Remove(id);
-            if (!removed)
+            catch (StorageException ex)
             {
-                return new NotFoundResult();
-            }
+                if (ex.RequestInformation.HttpStatusCode == 404)
+                {
+                    return new NotFoundResult();
+                }
 
-            return new OkResult();
+                return new BadRequestResult(); // TODO: lets default to bad request for now but will probably need to change this
+            }
         }
     }
 }

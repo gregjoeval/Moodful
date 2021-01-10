@@ -10,7 +10,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Moodful.Authorization
+namespace Moodful.Services.Security
 {
     /// <summary>
     /// Reference: https://liftcodeplay.com/2017/11/25/validating-auth0-jwt-tokens-in-azure-functions-aka-how-to-use-auth0-with-azure-functions/
@@ -19,19 +19,19 @@ namespace Moodful.Authorization
     {
         private readonly ILogger Logger;
         private readonly IConfigurationManager<OpenIdConnectConfiguration> ConfigurationManager;
-        private readonly AuthenticationOptions AuthenticationOptions;
+        private readonly SecurityOptions SecurityOptions;
 
         // TODO: need figure out how to inject ILogger
-        public Security(ILogger log, AuthenticationOptions authenticationOptions)
+        public Security(ILogger log, SecurityOptions securityOptions)
         {
-            AuthenticationOptions = authenticationOptions;
+            SecurityOptions = securityOptions;
 
             Logger = log;
 
             ConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
-                $"{AuthenticationOptions.Issuer}/.well-known/openid-configuration",
+                $"{SecurityOptions.Issuer}/.well-known/openid-configuration",
                 new OpenIdConnectConfigurationRetriever(),
-                new HttpDocumentRetriever { RequireHttps = AuthenticationOptions.Issuer.StartsWith("https://") }
+                new HttpDocumentRetriever { RequireHttps = SecurityOptions.Issuer.StartsWith("https://") }
             );
         }
 
@@ -66,9 +66,9 @@ namespace Moodful.Authorization
             var validationParameter = new TokenValidationParameters
             {
                 RequireSignedTokens = true,
-                ValidAudience = AuthenticationOptions.Audience,
+                ValidAudience = SecurityOptions.Audience,
                 ValidateAudience = true,
-                ValidIssuer = $"{AuthenticationOptions.Issuer}/", // Auth0's issuer has a '/' on the end of its url
+                ValidIssuer = $"{SecurityOptions.Issuer}/", // Auth0's issuer has a '/' on the end of its url
                 ValidateIssuer = true,
                 ValidateIssuerSigningKey = true,
                 ValidateLifetime = true,
@@ -107,31 +107,33 @@ namespace Moodful.Authorization
             return result;
         }
 
-        public async Task<ClaimsPrincipal> AuthenticateHttpRequestAsync(HttpRequest httpRequest)
+        public async Task<SecurityStatus> AuthenticateHttpRequestAsync(HttpRequest httpRequest, string userId)
         {
-            var authenticationHeader = ParseAuthenticationHeaderFromHttpRequest(httpRequest);
-
-            ClaimsPrincipal claimsPrincipal;
-            if ((claimsPrincipal = await ValidateTokenAsync(authenticationHeader)) != null)
+            if (SecurityOptions.Debug == true)
             {
-                return claimsPrincipal;
+                return SecurityStatus.Authenticated; // Doing this for now because swagger isnt using jwt token
             }
 
-            return null;
-        }
-
-        public JwtSecurityToken GetJWTSecurityTokenFromHttpRequestAsync(HttpRequest httpRequest)
-        {
             var authenticationHeader = ParseAuthenticationHeaderFromHttpRequest(httpRequest);
+
+            if ((await ValidateTokenAsync(authenticationHeader)) == null)
+            {
+                return SecurityStatus.UnAuthenticated;
+            }
 
             var tokenHandler = new JwtSecurityTokenHandler();
-            if (tokenHandler.CanReadToken(authenticationHeader.Parameter))
+            if (!tokenHandler.CanReadToken(authenticationHeader.Parameter))
             {
-                var token = tokenHandler.ReadJwtToken(authenticationHeader.Parameter);
-                return token;
+                return SecurityStatus.UnAuthenticated;
             }
 
-            return null;
+            var token = tokenHandler.ReadJwtToken(authenticationHeader.Parameter);
+            if (userId != token.Subject)
+            {
+                return SecurityStatus.UnAuthenticated;
+            }
+
+            return SecurityStatus.Authenticated;
         }
     }
 }

@@ -1,22 +1,25 @@
 using Aliencube.AzureFunctions.Extensions.OpenApi.Attributes;
+using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
-using Moodful.Authorization;
+using Moodful.Services.Security;
 using Moodful.Configuration;
 using Moodful.Models;
-using Newtonsoft.Json;
+using Moodful.Services.Storage;
+using Moodful.Services.Storage.TableEntities;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Moodful.Extensions;
 
 namespace Moodful.Functions
 {
@@ -24,118 +27,71 @@ namespace Moodful.Functions
     {
         private const string BasePath = nameof(Reviews);
         private Security Security;
-        private readonly AuthenticationOptions AuthenticationOptions;
-        private static readonly Dictionary<string, Dictionary<Guid, Review>> ReviewCollection = new Dictionary<string, Dictionary<Guid, Review>>();
+        private readonly SecurityOptions SecurityOptions;
+        private StorageService<ReviewTableEntity, Review> StorageService;
 
-        public Reviews(IOptions<AuthenticationOptions> authenticationOptions)
+        public Reviews(IOptions<SecurityOptions> securityOptions, IMapper mapper)
         {
-            AuthenticationOptions = authenticationOptions.Value;
-        }
-
-        private string GetUserIdFromHttpRequest(HttpRequest httpRequest)
-        {
-            var token = Security.GetJWTSecurityTokenFromHttpRequestAsync(httpRequest);
-            var userId = token.Subject;
-            return userId;
-        }
-
-        private static Dictionary<Guid, Review> GetReviewsByUserId(string userId)
-        {
-            if (ReviewCollection.TryGetValue(userId, out var reviews))
-            {
-                return reviews;
-            }
-
-            return null;
-        }
-
-        private static Dictionary<Guid, Review> UpsertReviewsByUserId(string userId, IEnumerable<Review> reviews)
-        {
-            ReviewCollection.TryGetValue(userId, out var existingModels);
-
-            foreach(var model in reviews)
-            {
-                if (existingModels == null)
-                {
-                    existingModels = reviews.ToDictionary(o => o.Id);
-                }
-                else
-                {
-                    var wasAdded = existingModels.TryAdd(model.Id, model);
-                    if (wasAdded == false)
-                    {
-                        var existingReview = existingModels[model.Id];
-
-                        existingReview.LastModified = DateTimeOffset.UtcNow;
-                        existingReview.Rating = model.Rating;
-                        existingReview.Secret = model.Secret;
-                        existingReview.TagIds = model.TagIds;
-                        existingReview.Description = model.Description;
-
-                        existingModels[model.Id] = existingReview;
-                    }
-                }
-            }
-
-            ReviewCollection[userId] = existingModels;
-
-            return existingModels;
+            SecurityOptions = securityOptions.Value;
+            StorageService = new StorageService<ReviewTableEntity, Review>(mapper);
         }
 
         [FunctionName(nameof(Reviews) + nameof(GetReviews))]
-        [ProducesResponseType(typeof(List<Review>), 200)]
+        [ProducesResponseType(typeof(IEnumerable<Review>), 200)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(404)]
         [OpenApiOperation(nameof(GetReviews), nameof(Reviews))]
-        [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(List<Review>))]
+        [OpenApiParameter("userId", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
+        [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(IEnumerable<Review>))]
+        [OpenApiResponseBody(HttpStatusCode.Unauthorized, "application/json", typeof(JObject))]
+        [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> GetReviews(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath)] HttpRequest httpRequest,
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = "{userId}/" + BasePath)] HttpRequest httpRequest,
+            [Table(TableNames.Review)] CloudTable cloudTable,
+            string userId,
             ILogger logger)
         {
-            Security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, SecurityOptions);
 
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
-            if (claimsPrincipal == null)
+            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
 
-            var userId = GetUserIdFromHttpRequest(httpRequest);
-            var reviews = GetReviewsByUserId(userId);
-            if (reviews == null)
+            var models = StorageService.Retrieve(cloudTable, userId);
+            if (models.Count() == 0)
             {
                 return new NotFoundResult();
             }
 
-            return new OkObjectResult(reviews.ToList().Select(o => o.Value));
+            return new OkObjectResult(models);
         }
 
         [FunctionName(nameof(Reviews) + nameof(GetReviewsById))]
         [ProducesResponseType(typeof(Review), 200)]
+        [ProducesResponseType(401)]
         [ProducesResponseType(404)]
         [OpenApiOperation(nameof(GetReviewsById), nameof(Reviews))]
+        [OpenApiParameter("userId", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
         [OpenApiParameter("id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Review))]
+        [OpenApiResponseBody(HttpStatusCode.Unauthorized, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> GetReviewsById(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = BasePath + "/{id}")] HttpRequest httpRequest,
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Get), Route = "{userId}/" + BasePath + "/{id}")] HttpRequest httpRequest,
+            [Table(TableNames.Review)] CloudTable cloudTable,
+            string userId,
             Guid id,
             ILogger logger)
         {
-            Security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, SecurityOptions);
 
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
-            if (claimsPrincipal == null)
+            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
 
-            var userId = GetUserIdFromHttpRequest(httpRequest);
-            var reviews = GetReviewsByUserId(userId);
-            if (reviews == null)
-            {
-                return new NotFoundResult();
-            }
-
-            var model = reviews.FirstOrDefault(o => o.Key == id).Value;
+            var model = StorageService.RetrieveById(cloudTable, userId, id.ToString());
             if (model == null)
             {
                 return new NotFoundResult();
@@ -146,111 +102,142 @@ namespace Moodful.Functions
 
         [FunctionName(nameof(Reviews) + nameof(PostReviews))]
         [ProducesResponseType(typeof(Review), 200)]
-        [ProducesResponseType(400)]
+        [ProducesResponseType(typeof(IEnumerable<ValidationResponse>), 400)]
+        [ProducesResponseType(401)]
         [ProducesResponseType(409)]
         [OpenApiOperation(nameof(PostReviews), nameof(Reviews))]
+        [OpenApiParameter("userId", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
         [OpenApiRequestBody("application/json", typeof(Review))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Review))]
+        [OpenApiResponseBody(HttpStatusCode.BadRequest, "application/json", typeof(IEnumerable<ValidationResponse>))]
+        [OpenApiResponseBody(HttpStatusCode.Unauthorized, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.Conflict, "application/json", typeof(JObject))]
         public async Task<IActionResult> PostReviews(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = BasePath)] HttpRequest httpRequest,
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Post), Route = "{userId}/" + BasePath)] HttpRequest httpRequest,
+            [Table(TableNames.Review)] CloudTable cloudTable,
+            string userId,
             ILogger logger)
         {
-            Security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, SecurityOptions);
 
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
-            if (claimsPrincipal == null)
+            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
 
-            string requestBody = await new StreamReader(httpRequest.Body).ReadToEndAsync();
-            var model = JsonConvert.DeserializeObject<Review>(requestBody);
-
-            var userId = GetUserIdFromHttpRequest(httpRequest);
-            var reviews = GetReviewsByUserId(userId);            
-            if (reviews != null && reviews.ContainsKey(model.Id))
+            try
             {
-                return new ConflictResult();
-            }
+                var result = await httpRequest.GetValidatedJsonBody<Review, ReviewValidator>();
 
-            UpsertReviewsByUserId(userId, new[] { model });
-            return new OkObjectResult(model);
+                if (!result.IsValid)
+                {
+                    return result.ToBadRequest();
+                }
+
+                var model = StorageService.Create(cloudTable, userId, result.Value);
+
+                return new OkObjectResult(model);
+            }
+            catch (StorageException ex)
+            {
+                if (ex.RequestInformation.HttpStatusCode == 409)
+                {
+                    return new ConflictResult();
+                }
+
+                return new BadRequestResult(); // TODO: lets default to bad request for now but will probably need to change this
+            }
         }
 
         [FunctionName(nameof(Reviews) + nameof(UpdateReviews))]
         [ProducesResponseType(typeof(Review), 200)]
-        [ProducesResponseType(400)]
+        [ProducesResponseType(typeof(IEnumerable<ValidationResponse>), 400)]
+        [ProducesResponseType(401)]
         [ProducesResponseType(404)]
         [OpenApiOperation(nameof(UpdateReviews), nameof(Reviews))]
+        [OpenApiParameter("userId", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
         [OpenApiRequestBody("application/json", typeof(Review))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Review))]
+        [OpenApiResponseBody(HttpStatusCode.BadRequest, "application/json", typeof(IEnumerable<ValidationResponse>))]
+        [OpenApiResponseBody(HttpStatusCode.Unauthorized, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> UpdateReviews(
-            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = BasePath)] HttpRequest httpRequest,
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Put), Route = "{userId}/" + BasePath)] HttpRequest httpRequest,
+            [Table(TableNames.Review)] CloudTable cloudTable,
+            string userId,
             ILogger logger)
         {
-            Security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, SecurityOptions);
 
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
-            if (claimsPrincipal == null)
+            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
 
-            var userId = GetUserIdFromHttpRequest(httpRequest);
-            var reviews = GetReviewsByUserId(userId);
-            if (reviews == null)
+            try
             {
-                return new NotFoundResult();
-            }
+                var result = await httpRequest.GetValidatedJsonBody<Review, ReviewValidator>();
 
-            string requestBody = await new StreamReader(httpRequest.Body).ReadToEndAsync();
-            var model = JsonConvert.DeserializeObject<Review>(requestBody);
-            if (reviews?.FirstOrDefault(o => o.Key == model.Id) == null)
+                if (!result.IsValid)
+                {
+                    return result.ToBadRequest();
+                }
+
+                var model = StorageService.Update(cloudTable, userId, result.Value);
+
+                return new OkObjectResult(model);
+            }
+            catch (StorageException ex)
             {
-                return new NotFoundResult();
+                if (ex.RequestInformation.HttpStatusCode == 404)
+                {
+                    return new NotFoundResult();
+                }
+
+                return new BadRequestResult(); // TODO: lets default to bad request for now but will probably need to change this
             }
-
-            UpsertReviewsByUserId(userId, new[] { model });
-
-            return new OkObjectResult(model);
         }
 
         [FunctionName(nameof(Reviews) + nameof(DeleteReviews))]
-        [ProducesResponseType(typeof(Review), 200)]
-        [ProducesResponseType(typeof(Review), 404)]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(404)]
         [OpenApiOperation(nameof(DeleteReviews), nameof(Reviews))]
+        [OpenApiParameter("userId", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
         [OpenApiParameter("id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
         [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(JObject))]
+        [OpenApiResponseBody(HttpStatusCode.BadRequest, "application/json", typeof(JObject))]
+        [OpenApiResponseBody(HttpStatusCode.Unauthorized, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> DeleteReviews(
-            [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Delete), Route = BasePath + "/{id}")] HttpRequest httpRequest,
+            [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Delete), Route = "{userId}/" + BasePath + "/{id}")] HttpRequest httpRequest,
+            [Table(TableNames.Review)] CloudTable cloudTable,
+            string userId,
             Guid id,
             ILogger logger)
         {
-            Security = new Security(logger, AuthenticationOptions);
+            Security = new Security(logger, SecurityOptions);
 
-            var claimsPrincipal = await Security.AuthenticateHttpRequestAsync(httpRequest);
-            if (claimsPrincipal == null)
+            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
 
-            var userId = GetUserIdFromHttpRequest(httpRequest);
-            var reviews = GetReviewsByUserId(userId);
-            if (reviews == null)
+            try
             {
-                return new NotFoundResult();
+                var model = StorageService.Delete(cloudTable, userId, id.ToString());
+                return new OkResult();
             }
-
-            var removed = reviews.Remove(id);
-            if (!removed)
+            catch (StorageException ex)
             {
-                return new NotFoundResult();
-            }
+                if (ex.RequestInformation.HttpStatusCode == 404)
+                {
+                    return new NotFoundResult();
+                }
 
-            return new OkResult();
+                return new BadRequestResult(); // TODO: lets default to bad request for now but will probably need to change this
+            }
         }
     }
 }
