@@ -14,13 +14,21 @@
     }
   ],
   "paths": {
-    "/reviews/{id}": {
+    "/{userId}/Reviews/{id}": {
       "delete": {
         "tags": [
           "Reviews"
         ],
         "operationId": "DeleteReviews",
         "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "id",
             "in": "path",
@@ -40,6 +48,26 @@
         ],
         "responses": {
           "200": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
             "description": "Payload of JObject",
             "content": {
               "application/json": {
@@ -68,6 +96,14 @@
         "operationId": "GetReviewsById",
         "parameters": [
           {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "id",
             "in": "path",
             "required": true,
@@ -88,6 +124,16 @@
               }
             }
           },
+          "401": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Payload of JObject",
             "content": {
@@ -101,12 +147,22 @@
         }
       }
     },
-    "/reviews": {
+    "/{userId}/Reviews": {
       "get": {
         "tags": [
           "Reviews"
         ],
         "operationId": "GetReviews",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Payload of Array of Review",
@@ -120,6 +176,26 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
           }
         }
       },
@@ -128,6 +204,16 @@
           "Reviews"
         ],
         "operationId": "PostReviews",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -144,6 +230,29 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Review"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Payload of Array of ValidationResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ValidationResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -165,6 +274,16 @@
           "Reviews"
         ],
         "operationId": "UpdateReviews",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -185,6 +304,29 @@
               }
             }
           },
+          "400": {
+            "description": "Payload of Array of ValidationResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ValidationResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Payload of JObject",
             "content": {
@@ -198,13 +340,21 @@
         }
       }
     },
-    "/tags/{id}": {
+    "/{userId}/Tags/{id}": {
       "delete": {
         "tags": [
           "Tags"
         ],
         "operationId": "DeleteTags",
         "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "id",
             "in": "path",
@@ -233,6 +383,26 @@
               }
             }
           },
+          "400": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Payload of JObject",
             "content": {
@@ -251,6 +421,14 @@
         ],
         "operationId": "GetTagsById",
         "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "id",
             "in": "path",
@@ -272,6 +450,16 @@
               }
             }
           },
+          "401": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Payload of JObject",
             "content": {
@@ -285,12 +473,22 @@
         }
       }
     },
-    "/tags": {
+    "/{userId}/Tags": {
       "get": {
         "tags": [
           "Tags"
         ],
         "operationId": "GetTags",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Payload of Array of Tag",
@@ -304,6 +502,26 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
           }
         }
       },
@@ -312,6 +530,16 @@
           "Tags"
         ],
         "operationId": "PostTags",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -328,6 +556,29 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Tag"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Payload of Array of ValidationResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ValidationResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -349,6 +600,16 @@
           "Tags"
         ],
         "operationId": "UpdateTags",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -365,6 +626,29 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Tag"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Payload of Array of ValidationResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ValidationResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Payload of JObject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -388,19 +672,6 @@
       "Review": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "lastModified": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
           "secret": {
             "type": "boolean"
           },
@@ -417,16 +688,25 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
       "Tag": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
           "title": {
             "type": "string"
           },
@@ -441,6 +721,21 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ValidationResponse": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
           }
         }
       }
