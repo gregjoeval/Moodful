@@ -1,39 +1,33 @@
 ﻿using Aliencube.AzureFunctions.Extensions.OpenApi.Attributes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
-using Moodful.Services.Security;
 using Moodful.Configuration;
+using Moodful.Extensions;
 using Moodful.Models;
+using Moodful.TableEntities;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using Moodful.Services.Storage;
-using Moodful.Services.Storage.TableEntities;
-using AutoMapper;
-using Microsoft.Azure.Cosmos.Table;
-using Moodful.Extensions;
 
 namespace Moodful.Functions
 {
     public class Tags
     {
         private const string BasePath = nameof(Tags);
-        private Security Security;
-        private readonly SecurityOptions SecurityOptions;
-        private StorageService<TagTableEntity, Tag> StorageService;
+        private readonly AuthenticationOptions SecurityOptions;
 
-        public Tags(IOptions<SecurityOptions> securityOptions, IMapper mapper)
+        public Tags(IOptions<AuthenticationOptions> securityOptions)
         {
             SecurityOptions = securityOptions.Value;
-            StorageService = new StorageService<TagTableEntity, Tag>(mapper);
         }
 
         [FunctionName(nameof(Tags) + nameof(GetTags))]
@@ -51,14 +45,12 @@ namespace Moodful.Functions
             string userId,
             ILogger logger)
         {
-            Security = new Security(logger, SecurityOptions);
-
-            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
+            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
 
-            var models = StorageService.Retrieve(cloudTable, userId);
+            var models = cloudTable.RetrieveEntities<TagTableEntity>(userId).Select(o => o.MapTo());
             if (models.Count() == 0)
             {
                 return new NotFoundResult();
@@ -84,14 +76,12 @@ namespace Moodful.Functions
             Guid id,
             ILogger logger)
         {
-            Security = new Security(logger, SecurityOptions);
-
-            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
+            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
 
-            var model = StorageService.RetrieveById(cloudTable, userId, id.ToString());
+            var model = cloudTable.RetrieveEntity<TagTableEntity>(userId, id.ToString()).MapTo();
             if (model == null)
             {
                 return new NotFoundResult();
@@ -118,9 +108,7 @@ namespace Moodful.Functions
             string userId,
             ILogger logger)
         {
-            Security = new Security(logger, SecurityOptions);
-
-            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
+            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
@@ -134,18 +122,13 @@ namespace Moodful.Functions
                     return result.ToBadRequest();
                 }
 
-                var model = StorageService.Create(cloudTable, userId, result.Value);
+                var model = cloudTable.CreateEntity(new TagTableEntity(userId, result.Value.Id.ToString(), result.Value)).MapTo();
 
                 return new OkObjectResult(model);
             }
-            catch (StorageException ex)
+            catch (StorageException ex) when (ex.RequestInformation.HttpStatusCode == 409)
             {
-                if (ex.RequestInformation.HttpStatusCode == 409)
-                {
-                    return new ConflictResult();
-                }
-
-                return new BadRequestResult(); // TODO: lets default to bad request for now but will probably need to change this
+                return new ConflictResult();
             }
         }
 
@@ -167,9 +150,7 @@ namespace Moodful.Functions
             string userId,
             ILogger logger)
         {
-            Security = new Security(logger, SecurityOptions);
-
-            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
+            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
@@ -183,18 +164,13 @@ namespace Moodful.Functions
                     return result.ToBadRequest();
                 }
 
-                var model = StorageService.Update(cloudTable, userId, result.Value);
+                var model = cloudTable.UpdateEntity(new TagTableEntity(userId, result.Value.Id.ToString(), result.Value));
 
                 return new OkObjectResult(model);
             }
-            catch (StorageException ex)
+            catch (StorageException ex) when (ex.RequestInformation.HttpStatusCode == 404)
             {
-                if (ex.RequestInformation.HttpStatusCode == 404)
-                {
-                    return new NotFoundResult();
-                }
-
-                return new BadRequestResult(); // TODO: lets default to bad request for now but will probably need to change this
+                return new NotFoundResult();
             }
         }
 
@@ -217,26 +193,19 @@ namespace Moodful.Functions
             Guid id,
             ILogger logger)
         {
-            Security = new Security(logger, SecurityOptions);
-
-            if (await Security.AuthenticateHttpRequestAsync(httpRequest, userId) == SecurityStatus.UnAuthenticated)
+            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.UnAuthenticated)
             {
                 return new UnauthorizedResult();
             }
 
             try
             {
-                var model = StorageService.Delete(cloudTable, userId, id.ToString());
+                var model = cloudTable.DeleteEntity<TagTableEntity>(userId, id.ToString()).MapTo();
                 return new OkResult();
             }
-            catch (StorageException ex)
+            catch (StorageException ex) when (ex.RequestInformation.HttpStatusCode == 404)
             {
-                if (ex.RequestInformation.HttpStatusCode == 404)
-                {
-                    return new NotFoundResult();
-                }
-
-                return new BadRequestResult(); // TODO: lets default to bad request for now but will probably need to change this
+                return new NotFoundResult();
             }
         }
     }

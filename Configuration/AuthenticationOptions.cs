@@ -1,6 +1,6 @@
 ﻿namespace Moodful.Configuration
 {
-    public class SecurityOptions
+    public class AuthenticationOptions
     {
         public bool Debug { get; set; }
 

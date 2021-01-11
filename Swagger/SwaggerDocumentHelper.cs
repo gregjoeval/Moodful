@@ -1,15 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Reflection;
-using Aliencube.AzureFunctions.Extensions.OpenApi;
+﻿using Aliencube.AzureFunctions.Extensions.OpenApi;
 using Aliencube.AzureFunctions.Extensions.OpenApi.Abstractions;
 using Aliencube.AzureFunctions.Extensions.OpenApi.Configurations;
 using Microsoft.Azure.WebJobs;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Serialization;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Reflection;
 
 namespace Moodful.Swagger
 {

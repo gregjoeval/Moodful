@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Moodful.Services.Storage.TableEntities
+namespace Moodful.TableEntities
 {
     public interface IModifiable
     {

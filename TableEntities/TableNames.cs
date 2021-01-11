@@ -1,4 +1,4 @@
-﻿namespace Moodful.Services.Storage.TableEntities
+﻿namespace Moodful.TableEntities
 {
     internal static class TableNames
     {

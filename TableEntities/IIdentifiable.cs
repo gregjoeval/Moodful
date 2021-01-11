@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace Moodful.Services.Storage.TableEntities
+namespace Moodful.TableEntities
 {
     public interface IIdentifiable
-
     {
         public string UserId { get; set; }
 

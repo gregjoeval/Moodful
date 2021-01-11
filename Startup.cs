@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+﻿using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moodful.Configuration;
@@ -21,11 +20,9 @@ namespace Moodful
         public override void Configure(IFunctionsHostBuilder builder)
         {
             var context = builder.GetContext();
-            var securityOptions = context.Configuration.GetSection(nameof(SecurityOptions));
+            var authenticationOptions = context.Configuration.GetSection(nameof(AuthenticationOptions));
 
-            builder.Services
-                .Configure<SecurityOptions>(securityOptions)
-                .AddAutoMapper(typeof(MappingProfile));
+            builder.Services.Configure<AuthenticationOptions>(authenticationOptions);
         }
 
         public override void ConfigureAppConfiguration(IFunctionsConfigurationBuilder builder)

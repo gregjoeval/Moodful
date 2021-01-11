@@ -4,6 +4,7 @@
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
     <UserSecretsId>8a939cef-086b-4d93-879f-de38b99c4bec</UserSecretsId>
     <_FunctionsSkipCleanOutput>true</_FunctionsSkipCleanOutput>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <None Include="Scripts\BumpNpmPackageVersion.ps1" />
@@ -11,8 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Aliencube.AzureFunctions.Extensions.OpenApi" Version="1.5.4" />
-    <PackageReference Include="AutoMapper" Version="10.1.1" />
-    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.0" />
     <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.0.1" />
     <PackageReference Include="FluentValidation" Version="9.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Abstractions" Version="2.2.0" />

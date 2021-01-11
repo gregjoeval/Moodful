@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Moodful.Extensions
+﻿namespace Moodful.Extensions
 {
     public class ValidationResponse
     {
