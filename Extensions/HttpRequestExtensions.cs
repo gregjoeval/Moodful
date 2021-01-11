@@ -23,83 +23,6 @@ namespace Moodful.Extensions
     /// </remarks>
     public static class HttpRequestExtensions
     {
-        private static AuthenticationHeaderValue ParseAuthenticationHeader(this HttpRequest httpRequest, ILogger logger = null)
-        {
-            var hasAuthorizationHeader = httpRequest.Headers.TryGetValue("Authorization", out var authorizationValue);
-
-            logger?.LogDebug($"hasAuthorizationHeader:{hasAuthorizationHeader}");
-
-            if (hasAuthorizationHeader)
-            {
-                var hasValidAuthenticationHeader = AuthenticationHeaderValue.TryParse(authorizationValue, out var authenticationHeader);
-
-                logger?.LogDebug($"hasValidAuthenticationHeader:{hasAuthorizationHeader}");
-
-                if (hasValidAuthenticationHeader)
-                {
-                    return authenticationHeader;
-                }
-            }
-
-            return null;
-        }
-
-        private static async Task<ClaimsPrincipal> ValidateTokenAsync(AuthenticationHeaderValue value, AuthenticationOptions securityOptions, ILogger logger = null)
-        {
-            if (value?.Scheme != "Bearer")
-                return null;
-
-            var configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
-                $"{securityOptions.Issuer}/.well-known/openid-configuration",
-                new OpenIdConnectConfigurationRetriever(),
-                new HttpDocumentRetriever { RequireHttps = securityOptions.Issuer.StartsWith("https://") }
-            );
-            var config = await configurationManager.GetConfigurationAsync(CancellationToken.None);
-
-            var validationParameter = new TokenValidationParameters
-            {
-                RequireSignedTokens = true,
-                ValidAudience = securityOptions.Audience,
-                ValidateAudience = true,
-                ValidIssuer = $"{securityOptions.Issuer}/", // Auth0's issuer has a '/' on the end of its url
-                ValidateIssuer = true,
-                ValidateIssuerSigningKey = true,
-                ValidateLifetime = true,
-                IssuerSigningKeys = config.SigningKeys,
-                ValidateActor = true
-            };
-
-            ClaimsPrincipal result = null;
-            var tries = 0;
-
-            while (result == null && tries <= 1)
-            {
-                try
-                {
-                    var handler = new JwtSecurityTokenHandler();
-                    result = handler.ValidateToken(value.Parameter, validationParameter, out var token);
-                }
-                catch (SecurityTokenSignatureKeyNotFoundException ex1)
-                {
-                    logger?.LogWarning($"{nameof(SecurityTokenSignatureKeyNotFoundException)}: {ex1.Message}");
-
-                    // This exception is thrown if the signature key of the JWT could not be found.
-                    // This could be the case when the issuer changed its signing keys, so we trigger a 
-                    // refresh and retry validation.
-                    configurationManager.RequestRefresh();
-                    tries++;
-                }
-                catch (SecurityTokenException ex2)
-                {
-                    logger?.LogWarning($"{nameof(SecurityTokenException)}: {ex2.Message}");
-
-                    return null;
-                }
-            }
-
-            return result;
-        }
-
         public static async Task<AuthenticationStatus> Authenticate(this HttpRequest httpRequest, AuthenticationOptions securityOptions, string userId, ILogger logger = null)
         {
             if (securityOptions.Debug == true)
@@ -109,7 +32,7 @@ namespace Moodful.Extensions
 
             var authenticationHeader = httpRequest.ParseAuthenticationHeader(logger);
 
-            if ((await ValidateTokenAsync(authenticationHeader, securityOptions, logger)) == null)
+            if ((await authenticationHeader?.ValidateTokenAsync(securityOptions, logger)) == null)
             {
                 return AuthenticationStatus.UnAuthenticated;
             }
@@ -172,13 +95,90 @@ namespace Moodful.Extensions
             };
         }
 
+        private static async Task<ClaimsPrincipal> ValidateTokenAsync(this AuthenticationHeaderValue value, AuthenticationOptions securityOptions, ILogger logger = null)
+        {
+            if (value?.Scheme != "Bearer")
+                return null;
+
+            var configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+                $"{securityOptions.Issuer}/.well-known/openid-configuration",
+                new OpenIdConnectConfigurationRetriever(),
+                new HttpDocumentRetriever { RequireHttps = securityOptions.Issuer.StartsWith("https://") }
+            );
+            var config = await configurationManager.GetConfigurationAsync(CancellationToken.None);
+
+            var validationParameter = new TokenValidationParameters
+            {
+                RequireSignedTokens = true,
+                ValidAudience = securityOptions.Audience,
+                ValidateAudience = true,
+                ValidIssuer = $"{securityOptions.Issuer}/", // Auth0's issuer has a '/' on the end of its url
+                ValidateIssuer = true,
+                ValidateIssuerSigningKey = true,
+                ValidateLifetime = true,
+                IssuerSigningKeys = config.SigningKeys,
+                ValidateActor = true
+            };
+
+            ClaimsPrincipal result = null;
+            var tries = 0;
+
+            while (result == null && tries <= 1)
+            {
+                try
+                {
+                    var handler = new JwtSecurityTokenHandler();
+                    result = handler.ValidateToken(value.Parameter, validationParameter, out var token);
+                }
+                catch (SecurityTokenSignatureKeyNotFoundException ex1)
+                {
+                    logger?.LogWarning($"{nameof(SecurityTokenSignatureKeyNotFoundException)}: {ex1.Message}");
+
+                    // This exception is thrown if the signature key of the JWT could not be found.
+                    // This could be the case when the issuer changed its signing keys, so we trigger a 
+                    // refresh and retry validation.
+                    configurationManager.RequestRefresh();
+                    tries++;
+                }
+                catch (SecurityTokenException ex2)
+                {
+                    logger?.LogWarning($"{nameof(SecurityTokenException)}: {ex2.Message}");
+
+                    return null;
+                }
+            }
+
+            return result;
+        }
+
+        private static AuthenticationHeaderValue ParseAuthenticationHeader(this HttpRequest httpRequest, ILogger logger = null)
+        {
+            var hasAuthorizationHeader = httpRequest.Headers.TryGetValue("Authorization", out var authorizationValue);
+
+            logger?.LogDebug($"hasAuthorizationHeader:{hasAuthorizationHeader}");
+
+            if (hasAuthorizationHeader)
+            {
+                var hasValidAuthenticationHeader = AuthenticationHeaderValue.TryParse(authorizationValue, out var authenticationHeader);
+
+                logger?.LogDebug($"hasValidAuthenticationHeader:{hasAuthorizationHeader}");
+
+                if (hasValidAuthenticationHeader)
+                {
+                    return authenticationHeader;
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Returns the deserialized request body.
         /// </summary>
         /// <typeparam name="T">Type used for deserialization of the request body.</typeparam>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static async Task<T> TryGetJsonBody<T>(this HttpRequest request)
+        private static async Task<T> TryGetJsonBody<T>(this HttpRequest request)
         {
             var requestBody = await request.ReadAsStringAsync();
 
