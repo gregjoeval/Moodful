@@ -34,19 +34,19 @@ namespace Moodful.Extensions
 
             if ((await authenticationHeader?.ValidateTokenAsync(securityOptions, logger)) == null)
             {
-                return AuthenticationStatus.UnAuthenticated;
+                return AuthenticationStatus.Unauthenticated;
             }
 
             var tokenHandler = new JwtSecurityTokenHandler();
             if (!tokenHandler.CanReadToken(authenticationHeader.Parameter))
             {
-                return AuthenticationStatus.UnAuthenticated;
+                return AuthenticationStatus.Unauthenticated;
             }
 
             var token = tokenHandler.ReadJwtToken(authenticationHeader.Parameter);
             if (userId != token.Subject)
             {
-                return AuthenticationStatus.UnAuthenticated;
+                return AuthenticationStatus.Unauthenticated;
             }
 
             return AuthenticationStatus.Authenticated;

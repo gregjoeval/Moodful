@@ -45,7 +45,7 @@ namespace Moodful.Functions
             string userId,
             ILogger logger)
         {
-            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.UnAuthenticated)
+            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.Unauthenticated)
             {
                 return new UnauthorizedResult();
             }
@@ -76,7 +76,7 @@ namespace Moodful.Functions
             Guid id,
             ILogger logger)
         {
-            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.UnAuthenticated)
+            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.Unauthenticated)
             {
                 return new UnauthorizedResult();
             }
@@ -108,7 +108,7 @@ namespace Moodful.Functions
             string userId,
             ILogger logger)
         {
-            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.UnAuthenticated)
+            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.Unauthenticated)
             {
                 return new UnauthorizedResult();
             }
@@ -150,7 +150,7 @@ namespace Moodful.Functions
             string userId,
             ILogger logger)
         {
-            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.UnAuthenticated)
+            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.Unauthenticated)
             {
                 return new UnauthorizedResult();
             }
@@ -193,7 +193,7 @@ namespace Moodful.Functions
             Guid id,
             ILogger logger)
         {
-            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.UnAuthenticated)
+            if (await httpRequest.Authenticate(SecurityOptions, userId, logger) == AuthenticationStatus.Unauthenticated)
             {
                 return new UnauthorizedResult();
             }
