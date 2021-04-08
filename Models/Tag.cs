@@ -8,6 +8,8 @@ namespace Moodful.Models
         [Required]
         public string Title { get; set; }
 
+        public string Avatar { get; set; }
+
         public string Color { get; set; }
 
         public DateTimeOffset CreatedAt { get; set; }

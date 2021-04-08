@@ -39,6 +39,8 @@ namespace Moodful.TableEntities
 
         public string Title { get; set; }
 
+        public string Avatar { get; set; }
+
         public string Color { get; set; }
 
         public override Tag MapTo()
@@ -51,6 +53,7 @@ namespace Moodful.TableEntities
                 CreatedAt = CreatedAt,
                 LastModified = LastModified,
                 Title = Title,
+                Avatar = Avatar,
                 Color = Color
             };
         }
