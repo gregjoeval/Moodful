@@ -6,7 +6,7 @@ on:
       - master
 
 env:
-  NODE_VERSION: '10.x'                # set this to the node version to use
+  NODE_VERSION: '14'                # set this to the node version to use
   CLIENT_PACKAGE_NAME: '@gjv/moodful-api-client'
   CLIENT_PACKAGE_FOLDER: './client-package'
   OPENAPI_SPECIFICATION_LOCATION: './Swagger/openapi.spec.json'
@@ -19,7 +19,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Use Node.js ${{ env.NODE_VERSION }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v2
       with:
         node-version: ${{ env.NODE_VERSION }}
         registry-url: https://registry.npmjs.org/
