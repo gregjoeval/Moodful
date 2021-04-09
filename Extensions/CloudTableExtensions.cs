@@ -50,6 +50,11 @@ namespace Moodful.Extensions
             where TEntity : ITableEntity, new()
         {
             var entity = cloudTable.RetrieveEntity<TEntity>(userId, id);
+            if (entity == null)
+            {
+                return default;
+            }
+
             var operation = TableOperation.Delete(entity);
             cloudTable.Execute(operation);
             return entity;

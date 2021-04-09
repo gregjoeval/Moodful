@@ -182,7 +182,7 @@ namespace Moodful.Functions
         [OpenApiOperation(nameof(DeleteTags), nameof(Tags))]
         [OpenApiParameter("userId", In = ParameterLocation.Path, Required = true, Type = typeof(string))]
         [OpenApiParameter("id", In = ParameterLocation.Path, Required = true, Type = typeof(Guid))]
-        [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(JObject))]
+        [OpenApiResponseBody(HttpStatusCode.OK, "application/json", typeof(Tag))]
         [OpenApiResponseBody(HttpStatusCode.BadRequest, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.Unauthorized, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
@@ -200,8 +200,14 @@ namespace Moodful.Functions
 
             try
             {
-                var model = cloudTable.DeleteEntity<TagTableEntity>(userId, id.ToString()).MapTo();
-                return new OkResult();
+                var model = cloudTable.DeleteEntity<TagTableEntity>(userId, id.ToString());
+
+                if (model == null)
+                {
+                    return new NotFoundResult();
+                }
+
+                return new OkObjectResult(model.MapTo());
             }
             catch (StorageException ex) when (ex.RequestInformation.HttpStatusCode == 404)
             {
