@@ -26,6 +26,7 @@ namespace Moodful.TableEntities
             CreatedAt = model.CreatedAt;
             LastModified = model.LastModified;
             Title = model.Title;
+            Avatar = model.Avatar;
             Color = model.Color;
         }
 
