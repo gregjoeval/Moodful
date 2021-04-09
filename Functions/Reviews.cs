@@ -187,7 +187,7 @@ namespace Moodful.Functions
         [OpenApiResponseBody(HttpStatusCode.Unauthorized, "application/json", typeof(JObject))]
         [OpenApiResponseBody(HttpStatusCode.NotFound, "application/json", typeof(JObject))]
         public async Task<IActionResult> DeleteReviews(
-            [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethods.Delete), Route = "{userId}/" + BasePath + "/{id}")] HttpRequest httpRequest,
+            [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethods.Delete), Route = "{userId}/" + BasePath + "/{id}")] HttpRequest httpRequest,
             [Table(TableNames.Review)] CloudTable cloudTable,
             string userId,
             Guid id,
