@@ -710,6 +710,9 @@
           "title": {
             "type": "string"
           },
+          "avatar": {
+            "type": "string"
+          },
           "color": {
             "type": "string"
           },
