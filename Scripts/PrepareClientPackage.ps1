@@ -39,9 +39,10 @@ $clientName = $packageJsonData.name -replace '.*@gjv/'
 Write-Host $clientName
 
 # add devDependency
+$packageJsonData.devDependencies | Add-Member -Force -NotePropertyName typescript -NotePropertyValue "latest"
 $packageJsonData.devDependencies | Add-Member -Force -NotePropertyName tsdx -NotePropertyValue "latest"
 $packageJsonData.devDependencies | Add-Member -Force -NotePropertyName tslib -NotePropertyValue "latest"
-$packageJsonData.devDependencies | Add-Member -Force -NotePropertyName @microsoft/api-extractor -NotePropertyValue "beta"
+$packageJsonData.devDependencies | Add-Member -Force -NotePropertyName @microsoft/api-extractor -NotePropertyValue "7.8.2-pr1796.0"
 
 # add tsdx build script
 # set name parameter to client name for entry files (https://tsdx.io/api-reference#tsdx-build)
