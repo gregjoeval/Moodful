@@ -3,7 +3,9 @@ name: CreateAndPublishClientPackage
 on:
   push:
     branches:
-      - master
+    - master
+    paths:
+    - './Swagger/openapi.spec.json'
 
 env:
   NODE_VERSION: '14'                # set this to the node version to use
